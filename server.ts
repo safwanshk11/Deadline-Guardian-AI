@@ -33,6 +33,41 @@ function getGeminiClient(): GoogleGenAI {
   return aiInstance;
 }
 
+// Helper to perform resilient Gemini requests with automatic retry and model fallback
+async function callGeminiWithFallback(
+  ai: GoogleGenAI,
+  params: {
+    contents: any;
+    config?: any;
+    model?: string;
+  }
+) {
+  const models = [params.model || "gemini-3.5-flash", "gemini-3.1-flash-lite"];
+  let lastError: any = null;
+
+  for (const modelName of models) {
+    const maxAttempts = 2;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        console.log(`Calling Gemini API [Model: ${modelName}, Attempt: ${attempt}/${maxAttempts}]...`);
+        const response = await ai.models.generateContent({
+          ...params,
+          model: modelName,
+        });
+        return response;
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`Gemini warning [Model: ${modelName}, Attempt: ${attempt}]:`, err.message || err);
+        if (attempt < maxAttempts) {
+          // Wait before retry
+          await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+        }
+      }
+    }
+  }
+  throw lastError || new Error("Gemini API service is currently experiencing high demand. Please try again in a few moments.");
+}
+
 // --------------------------------------------------------------------------------
 // API ENDPOINTS
 // --------------------------------------------------------------------------------
@@ -62,7 +97,7 @@ Target Hours: ${estimatedHours || 2}
 
 Please break this task down into logical, atomic, step-by-step subtasks. Each subtask must have a clear actionable title and an estimated completion time in minutes. Keep the number of subtasks between 3 and 7. The sum of estimated minutes should roughly correspond to the goal hours (e.g., if goal hours is 3, total minutes should be around 180).`;
 
-    const response = await ai.models.generateContent({
+    const response = await callGeminiWithFallback(ai, {
       model: "gemini-3.5-flash",
       contents: prompt,
       config: {
@@ -135,7 +170,7 @@ Please evaluate the risk of missing this deadline:
 3. 'suggestedMitigation': One concrete, highly tactical mitigation tip the user can perform immediately to secure the deadline.`;
 
     const ai = getGeminiClient();
-    const response = await ai.models.generateContent({
+    const response = await callGeminiWithFallback(ai, {
       model: "gemini-3.5-flash",
       contents: prompt,
       config: {
@@ -192,7 +227,7 @@ Reserve the 'guardian-priority' for the SINGLE most critical, at-risk, immediate
 
 Return a list of recommendations, specifying the taskId, recommendedPriority, and priorityReasoning for each task.`;
 
-    const response = await ai.models.generateContent({
+    const response = await callGeminiWithFallback(ai, {
       model: "gemini-3.5-flash",
       contents: prompt,
       config: {
@@ -260,7 +295,7 @@ Provide:
 3. 'scheduledItems': Chronological list of schedule blocks.
 4. 'mitigationTips': Workload-specific safety tips for today to prevent exhaustion while locking in key progress.`;
 
-    const response = await ai.models.generateContent({
+    const response = await callGeminiWithFallback(ai, {
       model: "gemini-3.5-flash",
       contents: prompt,
       config: {
