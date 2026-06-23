@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import confetti from "canvas-confetti";
 import { 
   Plus, Calendar, ShieldCheck, ShieldAlert, Sparkles, AlertTriangle, 
   CheckCircle2, Clock, CheckSquare, Search, Filter, Loader2, ListTodo, 
@@ -199,7 +200,48 @@ export default function App() {
     }
   };
 
+  const triggerConfetti = (isBig: boolean = false) => {
+    if (isBig) {
+      const duration = 1.8 * 1000;
+      const end = Date.now() + duration;
+
+      const frame = () => {
+        confetti({
+          particleCount: 4,
+          angle: 60,
+          spread: 60,
+          origin: { x: 0, y: 0.85 },
+          colors: ["#6366f1", "#10b981", "#3b82f6", "#ec4899", "#f59e0b"],
+        });
+        confetti({
+          particleCount: 4,
+          angle: 120,
+          spread: 60,
+          origin: { x: 1, y: 0.85 },
+          colors: ["#6366f1", "#10b981", "#3b82f6", "#ec4899", "#f59e0b"],
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      };
+      frame();
+    } else {
+      confetti({
+        particleCount: 30,
+        spread: 45,
+        origin: { y: 0.8 },
+        colors: ["#6366f1", "#10b981", "#3b82f6", "#f59e0b"],
+      });
+    }
+  };
+
   const handleUpdateSubtasks = (taskId: string, subtasks: SubTask[]) => {
+    let becameCompleted = false;
+    let subtaskCompleted = false;
+
+    const originalTask = tasks.find(t => t.id === taskId);
+
     const updated = tasks.map((t) => {
       if (t.id === taskId) {
         // Automatically mark as completed if all subtasks are complete and and any subtask exists
@@ -207,6 +249,15 @@ export default function App() {
         const comp = subtasks.filter(st => st.isCompleted).length;
         const status: Task["status"] = total > 0 && comp === total ? "completed" : "in_progress";
         
+        if (status === "completed" && t.status !== "completed") {
+          becameCompleted = true;
+        } else {
+          const oldCompletedCount = t.subtasks?.filter(st => st.isCompleted).length || 0;
+          if (comp > oldCompletedCount) {
+            subtaskCompleted = true;
+          }
+        }
+
         return {
           ...t,
           subtasks,
@@ -216,6 +267,12 @@ export default function App() {
       return t;
     });
     setTasks(updated);
+
+    if (becameCompleted) {
+      triggerConfetti(true);
+    } else if (subtaskCompleted) {
+      triggerConfetti(false);
+    }
 
     // Also update selected task active visual state
     const curSelected = updated.find(t => t.id === taskId);
@@ -245,14 +302,22 @@ export default function App() {
   };
 
   const handleToggleTaskStatus = (taskId: string) => {
+    let becameCompleted = false;
     const updated = tasks.map((t) => {
       if (t.id === taskId) {
         const nextStatus: Task["status"] = t.status === "completed" ? "in_progress" : "completed";
+        if (nextStatus === "completed") {
+          becameCompleted = true;
+        }
         return { ...t, status: nextStatus };
       }
       return t;
     });
     setTasks(updated);
+
+    if (becameCompleted) {
+      triggerConfetti(true);
+    }
 
     const curSelected = updated.find(t => t.id === taskId);
     if (curSelected) {
