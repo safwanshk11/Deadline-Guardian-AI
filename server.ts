@@ -343,6 +343,72 @@ Provide:
   }
 });
 
+// Endpoint 5: Dynamic AI Motivation & Guidance
+app.post("/api/generate-motivation", async (req, res) => {
+  try {
+    const { tasks, productivityScore, highRiskCount, isDarkMode } = req.body;
+
+    if (!tasks || !Array.isArray(tasks)) {
+      res.status(400).json({ error: "An array of active 'tasks' is required." });
+      return;
+    }
+
+    const ai = getGeminiClient();
+    const prompt = `Goal: You are a professional, elite, yet empathetic productivity coach inside "Deadline Guardian AI". Analyze the user's current commitments, threat/risk levels, and progress:
+- Enlisted Commitments: ${JSON.stringify(tasks, null, 2)}
+- High Risk / Critical Commitments count: ${highRiskCount || 0}
+- Productivity / Velocity score: ${productivityScore || 0}%
+- Dark Mode / High Pressure state: ${!!isDarkMode}
+
+Context rules for generating the motivational quote:
+1. If the workload is heavy (number of active, uncompleted tasks is high, e.g., > 4) or highRiskCount is high: Focus on resilience, consistency, stamina, and avoiding burnout.
+2. If overall productivity score is high (e.g., > 60% completion / velocity) or there are many completed tasks: Focus on building on that strong momentum, confidence, and finishing strong.
+3. If deadlines are very near (any task has less than 2 days remaining) or highRiskCount is critical: Focus on urgency, execution, eliminating distraction, and locking in the absolute first priority.
+4. Otherwise: Focus on balance, structured planning, and proactive focus.
+
+THEME TONE STYLE (CRITICAL REQUIREMENT):
+- Since isDarkMode is ${!!isDarkMode}:
+  - If TRUE (Dark Mode), the user wants "super hard" quotes. Provide a hard-hitting, extremely direct, high-pressure, tough-love, ultimate-accountability "no-nonsense" quote. Be blunt, call out procrastination, challenge them to push limits, and lock in focus like an elite commander.
+  - If FALSE (Light Mode), the user wants "light" quotes. Provide an encouraging, light-hearted, positive, supportive, warm, and comforting quote to keep spirits high and progress moving smoothly.
+
+Provide:
+1. 'quote': A single, highly curated, memorable, powerful motivational or focus quote customized to their actual state and tone style. (No general platitudes. Make it feel authentic, high-impact, and specific to their pressure level).
+2. 'primaryObjective': Today's single, absolute highest-leverage, core human-centric objective based on their tasks (e.g. "Focus on securing the final presentation draft before afternoon").
+3. 'biggestRisk': The biggest operational risk currently threatening their success today (e.g. "Over-complicating subtasks or losing energy in minor details").
+4. 'recommendedAction': One tactical, high-impact, immediate action they can perform in 15-30 minutes to gain immediate traction (e.g. "Open the draft, write down the 3 core slides, and log out of social media for 40 minutes").`;
+
+    const response = await callGeminiWithFallback(ai, {
+      model: "gemini-3.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            quote: { type: Type.STRING, description: "Highly curated context-driven motivational or focus quote" },
+            primaryObjective: { type: Type.STRING, description: "Single most critical focal objective for today" },
+            biggestRisk: { type: Type.STRING, description: "Main behavioral or operational hazard today" },
+            recommendedAction: { type: Type.STRING, description: "High-impact micro-step to execute immediately" }
+          },
+          required: ["quote", "primaryObjective", "biggestRisk", "recommendedAction"]
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) {
+      throw new Error("Empty response received from Gemini.");
+    }
+    const motivation = JSON.parse(text);
+    res.json(motivation);
+  } catch (error: any) {
+    console.error("Error in /api/generate-motivation:", error);
+    res.status(500).json({
+      error: error.message || "Failed to generate AI motivation due to a server error."
+    });
+  }
+});
+
 // --------------------------------------------------------------------------------
 // EXPRESS SERVER & VITE INTEGRATION
 // --------------------------------------------------------------------------------

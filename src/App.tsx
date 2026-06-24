@@ -10,6 +10,7 @@ import { motion } from "motion/react";
 import { Task, DailyActionPlan, PriorityRecommendation, SubTask } from "./types";
 import TaskForm from "./components/TaskForm";
 import TaskSubtaskManager from "./components/TaskSubtaskManager";
+import { AiMotivationPanel } from "./components/AiMotivationPanel";
 import RiskAnalysisWidget from "./components/RiskAnalysisWidget";
 import DailyPlanWidget from "./components/DailyPlanWidget";
 
@@ -864,7 +865,7 @@ export default function App() {
             <div className="grid grid-cols-12 gap-5 auto-rows-min">
               
               {/* Stat Card 1: Workspace Health */}
-              <section className="col-span-12 md:col-span-4 bg-slate-900 border border-slate-800 rounded-xl p-4.5">
+              <section className="col-span-12 lg:col-span-4 bg-slate-900 border border-slate-800 rounded-xl p-4.5">
                 <h3 className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-3.5 flex items-center justify-between">
                   <span>Guard System Health</span>
                   <span className="text-indigo-400 font-mono">active</span>
@@ -924,59 +925,15 @@ export default function App() {
                 </div>
               </section>
 
-              {/* Stat Card 2: Strategic Directives Summary */}
-              <section className="col-span-12 md:col-span-8 bg-slate-900 border border-slate-800 rounded-xl p-4.5 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-3 flex items-center gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Gemini Core Active Mitigation Directives</span>
-                  </h3>
-                  
-                  {dailyPlan ? (
-                    <div className="space-y-2">
-                      <p className="text-xs text-slate-350 leading-relaxed italic border-l-2 border-indigo-500 pl-3">
-                        "{dailyPlan.focusMessage}"
-                      </p>
-                      <p className="text-[11px] text-slate-400 pl-3 line-clamp-2">
-                        {dailyPlan.summary}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <p className="text-xs text-slate-400 leading-relaxed">
-                        No Daily Action Plan is active for today. Let Gemini structure your studies/tasks based on priority thresholds to optimize deadline safeties.
-                      </p>
-                      <button 
-                        onClick={() => setActiveTab("daily")}
-                        className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition"
-                      >
-                        Set up Action Plan <ArrowUpRight className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-950 p-2.5 rounded-lg border border-slate-850 mt-3">
-                  <div className="text-center md:text-left">
-                    <span className="text-[9px] text-slate-500 uppercase font-bold block mb-0.5">WORKLOAD PRESSURES</span>
-                    <span className="text-xs font-semibold font-mono text-slate-300">
-                      {activeTasksCount > 4 ? "🚨 Heavy Burden" : "⭐ Manageable"}
-                    </span>
-                  </div>
-                  <div className="text-center md:text-left">
-                    <span className="text-[9px] text-slate-500 uppercase font-bold block mb-0.5 font-sans">COMPLETED CHECKMARKS</span>
-                    <span className="text-xs font-semibold font-mono text-slate-300">{totalCompletedCount} Total</span>
-                  </div>
-                  <div className="text-center md:text-left">
-                    <span className="text-[9px] text-slate-500 uppercase font-bold block mb-0.5">CRITICAL RATINGS</span>
-                    <span className="text-xs font-semibold font-mono text-rose-400">{highRiskCount} Tasks</span>
-                  </div>
-                  <div className="text-center md:text-left animate-pulse">
-                    <span className="text-[9px] text-slate-500 uppercase font-bold block mb-0.5">SENTINEL RADAR</span>
-                    <span className="text-xs font-semibold text-emerald-400 font-mono">100% ONLINE</span>
-                  </div>
-                </div>
-              </section>
+              {/* Dynamic AI Motivation & Guidance Centerpiece */}
+              <div className="col-span-12 lg:col-span-8 flex">
+                <AiMotivationPanel 
+                  tasks={tasks}
+                  productivityScore={productivityScore}
+                  highRiskCount={highRiskCount}
+                  isDarkMode={isDarkMode}
+                />
+              </div>
 
               {/* SECTION: COMMITMENTS TABLE & TASK DETAIL SPLIT */}
               <div className="col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-5 mt-2">

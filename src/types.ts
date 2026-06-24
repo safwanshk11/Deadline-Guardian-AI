@@ -41,3 +41,11 @@ export interface PriorityRecommendation {
   recommendedPriority: 'low' | 'medium' | 'high' | 'critical' | 'guardian-priority';
   priorityReasoning: string;
 }
+
+export interface MotivationData {
+  quote: string;
+  primaryObjective: string;
+  biggestRisk: string;
+  recommendedAction: string;
+}
+
