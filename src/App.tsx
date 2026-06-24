@@ -13,6 +13,7 @@ import TaskSubtaskManager from "./components/TaskSubtaskManager";
 import { AiMotivationPanel } from "./components/AiMotivationPanel";
 import RiskAnalysisWidget from "./components/RiskAnalysisWidget";
 import DailyPlanWidget from "./components/DailyPlanWidget";
+import { FocusRoom } from "./components/FocusRoom";
 
 // Seed realistic mock data to match the high-density placeholder design immediately
 const PRE_POPULATED_TASKS: Task[] = [
@@ -92,20 +93,15 @@ const PRE_POPULATED_TASKS: Task[] = [
 export default function App() {
   const [showIntro, setShowIntro] = useState<boolean>(true);
 
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    const saved = localStorage.getItem("deadline_theme");
-    return saved !== "light";
-  });
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add("dark");
       document.documentElement.classList.remove("light");
-      localStorage.setItem("deadline_theme", "dark");
     } else {
       document.documentElement.classList.add("light");
       document.documentElement.classList.remove("dark");
-      localStorage.setItem("deadline_theme", "light");
     }
   }, [isDarkMode]);
 
@@ -139,7 +135,7 @@ export default function App() {
     return tasks[0] || null;
   });
   const [isNewTaskFormOpen, setIsNewTaskFormOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "tasks" | "prioritizer" | "daily">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "tasks" | "prioritizer" | "daily" | "focus">("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("All");
   const [apiConfigured, setApiConfigured] = useState<boolean | null>(null);
@@ -640,6 +636,17 @@ export default function App() {
     );
   }
 
+  if (activeTab === "focus") {
+    return (
+      <FocusRoom
+        tasks={tasks}
+        motivation={null}
+        isDarkMode={isDarkMode}
+        onExit={() => setActiveTab("dashboard")}
+      />
+    );
+  }
+
   return (
     <div id="guardian-root" className="flex h-screen w-full bg-slate-950 text-slate-200 font-sans overflow-hidden">
       
@@ -721,6 +728,18 @@ export default function App() {
             {dailyPlan && (
               <span className="text-emerald-400 font-mono text-[9px] uppercase font-bold tracking-widest">ACTIVE</span>
             )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab("focus")}
+            className={`w-full text-left px-3.5 py-2.5 rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
+              activeTab === "focus"
+                ? "bg-indigo-600 border border-indigo-500/40 text-white"
+                : "hover:bg-slate-800 text-slate-400"
+            }`}
+          >
+            <span>Focus Room</span>
+            <span className="text-[10px] text-indigo-400 font-mono">⚡ LIVE</span>
           </button>
         </nav>
 
@@ -838,6 +857,14 @@ export default function App() {
             }`}
           >
             Action Schedule
+          </button>
+          <button
+            onClick={() => setActiveTab("focus")}
+            className={`px-3 py-1.5 rounded text-xs tracking-tight font-semibold ${
+              activeTab === "focus" ? "bg-indigo-600 text-white" : "text-slate-400"
+            }`}
+          >
+            Focus Room
           </button>
         </div>
 
