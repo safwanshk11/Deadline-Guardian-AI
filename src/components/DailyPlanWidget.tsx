@@ -167,84 +167,100 @@ export default function DailyPlanWidget({ tasks, plan, onSetPlan }: DailyPlanWid
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-              
-              {/* Chronological blocks stream */}
-              <div className="lg:col-span-7 space-y-3.5 max-h-[360px] overflow-y-auto pr-1">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 block mb-2.5">
-                  Chronological Stream blocks
+            <div className="w-full space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500">
+                  Chronological Daily Timeline
                 </span>
+                <span className="text-[10px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                  {plan.scheduledItems?.length || 0} Schedule Blocks
+                </span>
+              </div>
+
+              <div className="relative border-l-2 border-slate-800 ml-4 pl-6 space-y-4 max-h-[550px] overflow-y-auto pr-1">
                 {plan.scheduledItems?.map((item, index) => {
                   const isBreak = item.taskId === "break" || item.taskId === "buffer";
+                  const matchingTask = tasks.find((t) => t.id === item.taskId);
+
                   return (
-                    <div 
-                      key={index} 
-                      className={`flex gap-3.5 items-start p-3 rounded-lg border transition ${
+                    <div key={index} className="relative group pb-1">
+                      {/* Timeline Bullet Node */}
+                      <div className={`absolute -left-[32px] top-1.5 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow ${
                         isBreak 
-                          ? "bg-slate-950/40 border-slate-800/60" 
-                          : "bg-slate-900 border-slate-800 hover:border-slate-700 hover:bg-slate-850/50"
-                      }`}
-                    >
-                      <div className="flex flex-col items-center justify-center bg-slate-950 border border-slate-800/80 rounded px-2.5 py-1.5 font-mono text-[10px] text-indigo-300 font-bold tracking-tight text-center min-w-[90px] shrink-0 shadow-sm">
-                        <Clock className="w-3 h-3 text-indigo-400 mb-1 inline-block" />
-                        {item.timeSlot}
+                          ? "border-slate-700 bg-slate-900" 
+                          : "border-indigo-500 bg-slate-950"
+                      }`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${isBreak ? "bg-slate-500" : "bg-indigo-400 animate-pulse"}`} />
                       </div>
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <h4 className={`text-xs font-semibold truncate ${isBreak ? "text-slate-400" : "text-slate-100"}`}>
-                            {item.taskTitle}
-                          </h4>
-                          {isBreak && (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-500 uppercase tracking-widest font-semibold border border-slate-750">
-                              REPOSE
+                      {/* Schedule Item Card */}
+                      <div className={`p-4 rounded-xl border transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                        isBreak
+                          ? "bg-slate-950/30 border-slate-800/80 hover:border-slate-700"
+                          : "bg-gradient-to-r from-slate-900 to-slate-950 border-slate-800 hover:border-indigo-500/20 hover:shadow-md hover:shadow-indigo-950/20"
+                      }`}>
+                        <div className="flex-1 space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {/* Time Slot Badge */}
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[10.5px] font-mono font-bold uppercase tracking-wider ${
+                              isBreak 
+                                ? "bg-slate-800/80 text-slate-400 border border-slate-700/50" 
+                                : "bg-indigo-950/80 text-indigo-300 border border-indigo-900/40"
+                            }`}>
+                              <Clock className="w-3 h-3 text-indigo-400 shrink-0" />
+                              {item.timeSlot}
                             </span>
-                          )}
+
+                            {/* Task Title */}
+                            <h4 className={`text-xs font-bold uppercase tracking-wide ${isBreak ? "text-slate-400 animate-pulse" : "text-slate-100"}`}>
+                              {item.taskTitle}
+                            </h4>
+
+                            {isBreak && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-500 uppercase tracking-widest font-black border border-slate-750">
+                                Repose Break
+                              </span>
+                            )}
+
+                            {!isBreak && matchingTask && (
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-black tracking-widest border ${
+                                matchingTask.priority === "critical" || matchingTask.priority === "guardian-priority"
+                                  ? "bg-rose-950/40 text-rose-400 border-rose-900/55"
+                                  : matchingTask.priority === "high"
+                                  ? "bg-amber-950/40 text-amber-400 border-amber-900/55"
+                                  : "bg-slate-800 text-slate-400 border-slate-700"
+                              }`}>
+                                {matchingTask.priority}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Activity Details */}
+                          <p className="text-xs text-slate-300 leading-relaxed pl-1">
+                            {item.activity}
+                          </p>
                         </div>
-                        <p className="text-[11px] text-slate-400 leading-normal mt-1 flex items-start gap-1">
-                          <ChevronRight className="w-3 h-3 text-indigo-500 shrink-0 mt-0.5" />
-                          <span className="truncate">{item.activity}</span>
-                        </p>
+
+                        {/* Database context details */}
+                        {!isBreak && matchingTask && (
+                          <div className="flex flex-row md:flex-col items-start md:items-end gap-2 shrink-0 border-t md:border-t-0 border-slate-850 pt-2.5 md:pt-0 text-[10.5px]">
+                            {matchingTask.category && (
+                              <span className="text-slate-500 font-mono">
+                                Category: <strong className="text-slate-400 font-sans">{matchingTask.category}</strong>
+                              </span>
+                            )}
+                            {matchingTask.estimatedHours && (
+                              <span className="text-slate-500 font-mono">
+                                Hours: <strong className="text-slate-400 font-sans">{matchingTask.estimatedHours}h</strong>
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
                 })}
               </div>
-
-              {/* Strategic Advice and Tips panel */}
-              <div className="lg:col-span-5 flex flex-col justify-between gap-4 bg-indigo-950/20 border border-indigo-500/20 rounded-xl p-4.5">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-1.5 border-b border-indigo-900/60 pb-2">
-                    <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse shrink-0" />
-                    <span className="text-xs font-black tracking-wider text-indigo-300 uppercase">
-                      Strategic Insight
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-slate-300 font-medium leading-relaxed italic">
-                    "{plan.focusMessage}"
-                  </p>
-
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    {plan.summary}
-                  </p>
-                </div>
-
-                <div className="space-y-2 pt-3 border-t border-indigo-900/60">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-500">
-                    Defenders Safeguards
-                  </span>
-                  <ul className="space-y-1.5">
-                    {plan.mitigationTips?.slice(0, 3).map((tip, idx) => (
-                      <li key={idx} className="text-[11px] text-slate-300 flex items-start gap-2">
-                        <CheckSquare className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
-                        <span>{tip}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
             </div>
           )}
         </div>

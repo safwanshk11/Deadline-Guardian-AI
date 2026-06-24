@@ -752,7 +752,6 @@ export default function App() {
               >
                 🛡️
               </span>
-              Deadline Guardian Dashboard
             </h1>
             <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
             <span className="text-xs text-slate-400 font-mono hidden sm:block">
