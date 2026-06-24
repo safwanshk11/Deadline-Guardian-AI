@@ -82,12 +82,12 @@ export const AiMotivationPanel: React.FC<AiMotivationPanelProps> = ({
     }
   };
 
-  // Auto-fetch if there is no motivation cache, or when tasks length or theme changes
+  // Auto-fetch ONLY if there is no cached motivation in state, and tasks are available
   useEffect(() => {
-    if (tasks.length > 0) {
-      fetchMotivation();
+    if (!motivation && tasks.length > 0) {
+      fetchMotivation(false);
     }
-  }, [tasks.length, isDarkMode]);
+  }, [tasks.length]);
 
   return (
     <section 

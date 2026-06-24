@@ -150,8 +150,10 @@ app.post("/api/estimate-risk", async (req, res) => {
         .join("\n");
     }
 
-    const prompt = `Goal: Analyze deadline delay risk for the following task.
-Task Details:
+    const prompt = `Goal: Analyze deadline delay risk for the following task from a strategic portfolio-level perspective.
+You must evaluate all active commitments together as a cohesive portfolio rather than analyzing each in isolation.
+
+Task of Interest Details:
 - Title: "${task.title}"
 - Description: "${task.description || "N/A"}"
 - Category: "${task.category || "General"}"
@@ -161,13 +163,19 @@ Task Details:
 - Task status: "${task.status}"
 - Current Date/Time: "${currentLocalTime || new Date().toISOString()}"
 
-Other concurrent active tasks in the user's workload to evaluate overall capacity:
+Other concurrent active commitments in the user's workload portfolio:
 ${otherTasksText}
 
-Please evaluate the risk of missing this deadline:
-1. 'riskScore' (0 to 100): An integer percentage representing the risk of missing the deadline. High risk factors: deadline is extremely close (e.g., today/tomorrow), incomplete subtasks, dense concurrent workload, high estimated hours.
-2. 'riskExplanation': A brief, concise explanation (1-2 sentences) of the risk coefficients (such as timeline compression, workload density, context complexity).
-3. 'suggestedMitigation': One concrete, highly tactical mitigation tip the user can perform immediately to secure the deadline.`;
+Perform an advanced PORTFOLIO-LEVEL reasoning evaluation:
+1. Consider interactions, shared capacity, and dependencies between this task and the rest of the portfolio.
+2. Detect workload collisions (overlapping effort peaks) and competing deadlines (multiple heavy deliverables due within the same compressed window).
+3. Identify which specific commitment contributes the most overall risk to the user's success today.
+4. Generate recommendations that optimize overall portfolio success probability, rather than just solving for this task in isolation.
+
+Provide the following outputs:
+1. 'riskScore' (0 to 100): An integer representing the risk of missing this specific deadline.
+2. 'riskExplanation': A brief portfolio-level risk analysis (1-2 sentences). Instead of saying "[Task] Risk = X%", explain exactly how it relates to the entire commitment portfolio. For example: Identify if it or another task contributes the largest share of overall deadline risk, call out any competing deadlines or workload collisions, and explain the dynamic. (e.g., "The DBMS Exam contributes the largest share of overall deadline risk because it is due tomorrow and has no remaining recovery buffer, which collides heavily with the preparation required for this task.")
+3. 'suggestedMitigation': One highly tactical, portfolio-optimizing recommendation that secures this deadline while managing overall success probability for the entire list of commitments.`;
 
     const ai = getGeminiClient();
     const response = await callGeminiWithFallback(ai, {
@@ -216,16 +224,20 @@ app.post("/api/prioritize-tasks", async (req, res) => {
     }
 
     const ai = getGeminiClient();
-    const prompt = `Goal: Analyze the entire list of tasks and recommend optimal priorities to prevent deadline misses.
+    const prompt = `Goal: Upgrade your evaluation to portfolio-level reasoning. Analyze the entire list of active commitments collectively rather than in isolation to recommend optimal priorities that prevent deadline collisions.
 Current Date/Time: "${currentLocalTime || new Date().toISOString()}"
 
-Active Tasks to analyze:
+Active commitments portfolio to analyze:
 ${JSON.stringify(tasks, null, 2)}
 
-Please evaluate all tasks collectively and decide the most strategic priority level ('low', 'medium', 'high', 'critical', or 'guardian-priority') for each task.
-Reserve the 'guardian-priority' for the SINGLE most critical, at-risk, immediately urgent task that requires the user's undivided attention.
+Please evaluate all active commitments together from the perspective of a strategic portfolio planner:
+1. Consider interactions and potential conflicts between different commitments.
+2. Detect workload collisions (overlapping effort peaks) and competing deadlines (deliverables due in close proximity).
+3. Identify which specific commitment contributes the most overall risk to the user's timeline.
+4. Decide the most strategic recommended priority level ('low', 'medium', 'high', 'critical', or 'guardian-priority') for each task to maximize overall portfolio success probability.
+5. Reserve 'guardian-priority' for the SINGLE most critical, high-risk commitment that represents the absolute largest share of overall risk and demands immediate, undivided focus.
 
-Return a list of recommendations, specifying the taskId, recommendedPriority, and priorityReasoning for each task.`;
+In 'priorityReasoning' for each task, write a brief (1-2 sentences) portfolio-level explanation. Explicitly specify workload collisions or competing deadlines, and highlight which task represents the largest share of overall risk in the portfolio (e.g., "The DBMS Exam contributes the largest share of overall deadline risk because it is due tomorrow with zero recovery buffer, causing a severe workload collision with your API Integration Bridge").`;
 
     const response = await callGeminiWithFallback(ai, {
       model: "gemini-3.5-flash",
@@ -276,24 +288,27 @@ app.post("/api/generate-action-plan", async (req, res) => {
     }
 
     const ai = getGeminiClient();
-    const prompt = `Goal: Create a highly personalized, structured Daily Action Plan to navigate deadlines safely based on the user's schedule constraints and active workload.
+    const prompt = `Goal: Create a structured Daily Action Plan employing portfolio-level strategic planning. You must evaluate all active commitments together as a cohesive portfolio rather than analyzing each in isolation.
 Current Date/Time: "${currentLocalTime || new Date().toISOString()}"
 User Constraints:
 - Preferred wake-up time: "${wakeTime || "07:00"}"
 - Preferred bedtime: "${sleepTime || "23:00"}"
 - Targeted active focused work hours for today: ${availableHours || 6} hours
 
-Active, pending, or in-progress tasks:
+Active, pending, or in-progress commitments:
 ${JSON.stringify(tasks, null, 2)}
 
-Design a clean, productive block schedule for today starting from wake-time to bedtime. Divide the user's available focused hours into structured blocks (incorporating study/work blocks, healthy focus breaks, and brief buffers).
-Assign priority task titles or activities of tasks (use the correct task ID!) so they can execute on their pending deadlines today. Use 'break' or 'buffer' for rest blocks.
+As a strategic planner managing the entire portfolio of commitments:
+1. Consider interactions between commitments, detecting workload collisions and competing deadlines.
+2. Identify the single commitment contributing the most overall risk to the user's timeline.
+3. Design a daily block schedule that resolves workload collisions and optimizes overall success probability for the entire portfolio.
+4. Allocate time slots to address high-risk commitments first, ensuring adequate buffers to mitigate competing deadline risks.
 
 Provide:
-1. 'summary': Overview of today's tactical game plan (2-3 sentences).
-2. 'focusMessage': A highly motivating, reassurance-oriented sentence matching the user's deadline pressure.
-3. 'scheduledItems': Chronological list of schedule blocks.
-4. 'mitigationTips': Workload-specific safety tips for today to prevent exhaustion while locking in key progress.`;
+1. 'summary': A portfolio-level overview of today's tactical game plan, explaining how it mitigates workload collisions and competing deadlines to optimize success (2-3 sentences).
+2. 'focusMessage': A highly motivating, strategic sentence pointing out the highest-priority risk and how today's schedule overcomes it.
+3. 'scheduledItems': Chronological list of schedule blocks starting from wake-time to bedtime.
+4. 'mitigationTips': Tactical portfolio-safety tips for today to keep all active commitments on track while preventing burnout.`;
 
     const response = await callGeminiWithFallback(ai, {
       model: "gemini-3.5-flash",
@@ -354,28 +369,27 @@ app.post("/api/generate-motivation", async (req, res) => {
     }
 
     const ai = getGeminiClient();
-    const prompt = `Goal: You are a professional, elite, yet empathetic productivity coach inside "Deadline Guardian AI". Analyze the user's current commitments, threat/risk levels, and progress:
-- Enlisted Commitments: ${JSON.stringify(tasks, null, 2)}
+    const prompt = `Goal: You are an elite strategic portfolio planner and productivity coach inside "Deadline Guardian AI". Your role is to evaluate all active commitments together rather than analyzing each in isolation, detecting interactions and competing deadlines.
+- Enlisted Commitments Portfolio: ${JSON.stringify(tasks, null, 2)}
 - High Risk / Critical Commitments count: ${highRiskCount || 0}
 - Productivity / Velocity score: ${productivityScore || 0}%
 - Dark Mode / High Pressure state: ${!!isDarkMode}
 
-Context rules for generating the motivational quote:
-1. If the workload is heavy (number of active, uncompleted tasks is high, e.g., > 4) or highRiskCount is high: Focus on resilience, consistency, stamina, and avoiding burnout.
-2. If overall productivity score is high (e.g., > 60% completion / velocity) or there are many completed tasks: Focus on building on that strong momentum, confidence, and finishing strong.
-3. If deadlines are very near (any task has less than 2 days remaining) or highRiskCount is critical: Focus on urgency, execution, eliminating distraction, and locking in the absolute first priority.
-4. Otherwise: Focus on balance, structured planning, and proactive focus.
+Strategic Reasoning Rules:
+1. Evaluate interactions between commitments, detecting workload collisions and competing deadlines.
+2. Identify the single commitment in the portfolio contributing the most overall risk to success.
+3. Formulate guidance that optimizes overall portfolio success probability, balancing high-impact execution with stress recovery.
 
 THEME TONE STYLE (CRITICAL REQUIREMENT):
 - Since isDarkMode is ${!!isDarkMode}:
-  - If TRUE (Dark Mode), the user wants "super hard" quotes. Provide a hard-hitting, extremely direct, high-pressure, tough-love, ultimate-accountability "no-nonsense" quote. Be blunt, call out procrastination, challenge them to push limits, and lock in focus like an elite commander.
-  - If FALSE (Light Mode), the user wants "light" quotes. Provide an encouraging, light-hearted, positive, supportive, warm, and comforting quote to keep spirits high and progress moving smoothly.
+  - If TRUE (Dark Mode), provide a hard-hitting, extremely direct, high-pressure, tough-love, ultimate-accountability "no-nonsense" quote. Be blunt, call out procrastination, challenge them to push limits.
+  - If FALSE (Light Mode), provide an encouraging, light-hearted, positive, supportive, warm, and comforting quote.
 
 Provide:
-1. 'quote': A single, highly curated, memorable, powerful motivational or focus quote customized to their actual state and tone style. (No general platitudes. Make it feel authentic, high-impact, and specific to their pressure level).
-2. 'primaryObjective': Today's single, absolute highest-leverage, core human-centric objective based on their tasks (e.g. "Focus on securing the final presentation draft before afternoon").
-3. 'biggestRisk': The biggest operational risk currently threatening their success today (e.g. "Over-complicating subtasks or losing energy in minor details").
-4. 'recommendedAction': One tactical, high-impact, immediate action they can perform in 15-30 minutes to gain immediate traction (e.g. "Open the draft, write down the 3 core slides, and log out of social media for 40 minutes").`;
+1. 'quote': A single, memorable, powerful focus quote reflecting their current portfolio-level stress or momentum.
+2. 'primaryObjective': Today's single, absolute highest-leverage, core human-centric objective based on optimizing overall portfolio success (e.g. "Secure the DBMS exam foundations to resolve the largest timeline threat, unlocking capacity for your other projects").
+3. 'biggestRisk': The biggest portfolio-level operational risk currently threatening success today (e.g., "Workload collision between Q4 Audit and the API Bridge, leading to fragmented attention and missed targets").
+4. 'recommendedAction': One tactical, portfolio-level immediate action they can perform in 15-30 minutes to mitigate the largest share of risk and gain immediate traction (e.g., "Complete the first two subtasks of your highest-risk commitment to establish safety buffers").`;
 
     const response = await callGeminiWithFallback(ai, {
       model: "gemini-3.5-flash",

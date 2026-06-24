@@ -135,7 +135,7 @@ export default function App() {
     return tasks[0] || null;
   });
   const [isNewTaskFormOpen, setIsNewTaskFormOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "tasks" | "prioritizer" | "daily" | "focus">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "tasks" | "daily" | "focus">("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("All");
   const [apiConfigured, setApiConfigured] = useState<boolean | null>(null);
@@ -636,22 +636,19 @@ export default function App() {
     );
   }
 
-  if (activeTab === "focus") {
-    return (
-      <FocusRoom
-        tasks={tasks}
-        motivation={null}
-        isDarkMode={isDarkMode}
-        onExit={() => setActiveTab("dashboard")}
-      />
-    );
-  }
-
   return (
     <div id="guardian-root" className="flex h-screen w-full bg-slate-950 text-slate-200 font-sans overflow-hidden">
-      
-      {/* SIDEBAR NAVIGATION - Styled to match High Density look perfectly */}
-      <aside className="w-64 border-r border-slate-800 bg-slate-900 flex flex-col shrink-0 hidden md:flex">
+      {activeTab === "focus" ? (
+        <FocusRoom
+          tasks={tasks}
+          motivation={null}
+          isDarkMode={isDarkMode}
+          onExit={() => setActiveTab("dashboard")}
+        />
+      ) : (
+        <>
+          {/* SIDEBAR NAVIGATION - Styled to match High Density look perfectly */}
+          <aside className="w-64 border-r border-slate-800 bg-slate-900 flex flex-col shrink-0 hidden md:flex">
         
         {/* Brand Header */}
         <div 
@@ -705,18 +702,6 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => setActiveTab("prioritizer")}
-            className={`w-full text-left px-3.5 py-2.5 rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-              activeTab === "prioritizer"
-                ? "bg-indigo-600 border border-indigo-500/40 text-white"
-                : "hover:bg-slate-800 text-slate-400"
-            }`}
-          >
-            <span>Optimal Prioritizer</span>
-            <span className="text-[10px] text-amber-400">Gemini</span>
-          </button>
-
-          <button
             onClick={() => setActiveTab("daily")}
             className={`w-full text-left px-3.5 py-2.5 rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
               activeTab === "daily"
@@ -725,9 +710,6 @@ export default function App() {
             }`}
           >
             <span>Daily Schedule Block</span>
-            {dailyPlan && (
-              <span className="text-emerald-400 font-mono text-[9px] uppercase font-bold tracking-widest">ACTIVE</span>
-            )}
           </button>
 
           <button
@@ -739,34 +721,21 @@ export default function App() {
             }`}
           >
             <span>Focus Room</span>
-            <span className="text-[10px] text-indigo-400 font-mono">⚡ LIVE</span>
           </button>
         </nav>
 
         {/* Footer Monitor Info */}
-        <div className="p-4 mt-auto border-t border-slate-800 bg-slate-950/30">
-          {apiConfigured === false && (
-            <div className="mb-3 bg-red-950/30 border border-red-900/40 rounded-lg p-3 text-[11px] text-red-200">
+        {apiConfigured === false && (
+          <div className="p-4 mt-auto border-t border-slate-800 bg-slate-950/30">
+            <div className="bg-red-950/30 border border-red-900/40 rounded-lg p-3 text-[11px] text-red-200">
               <span className="font-bold flex items-center gap-1 text-red-400 mb-1">
                 <AlertTriangle className="w-3.5 h-3.5" />
                 No API Key Detected
               </span>
               Verify <code className="bg-red-950/60 px-1 py-0.5 rounded font-mono">GEMINI_API_KEY</code> setup in the Settings Secret box to enable real-time risk diagnostic calculations.
             </div>
-          )}
-
-          <div className="bg-indigo-950/20 border border-indigo-500/10 rounded-lg p-3">
-            <div className="flex items-center gap-2 mb-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
-              <span className="text-[10px] font-extrabold text-indigo-300 uppercase tracking-widest">
-                Gemini Core Shield
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-400 leading-normal">
-              Analyzing {activeTasksCount} commitments in real-time for delay, buffer slippage, and critical milestones.
-            </p>
           </div>
-        </div>
+        )}
       </aside>
 
       {/* MAIN CONTAINER AREA */}
@@ -815,6 +784,16 @@ export default function App() {
             </div>
 
             <button
+              onClick={handleOptimisePriorities}
+              disabled={prioritizing || tasks.filter(t => t.status !== "completed").length === 0}
+              className="bg-slate-950/60 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 hover:text-indigo-400 font-semibold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition whitespace-nowrap cursor-pointer shadow mr-1"
+              title="Run collective Gemini prioritizer checks on your entire portfolio of commitments"
+            >
+              <RefreshCcw className={`w-3.5 h-3.5 text-indigo-400 ${prioritizing ? "animate-spin" : ""}`} />
+              <span>Rebalance Priorities</span>
+            </button>
+
+            <button
               onClick={() => setIsNewTaskFormOpen(true)}
               className="bg-indigo-600 hover:bg-indigo-500 border border-indigo-500/30 text-white font-semibold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition whitespace-nowrap cursor-pointer shadow shadow-indigo-900/40"
             >
@@ -841,14 +820,6 @@ export default function App() {
             }`}
           >
             All ({tasks.length})
-          </button>
-          <button
-            onClick={() => setActiveTab("prioritizer")}
-            className={`px-3 py-1.5 rounded text-xs tracking-tight font-semibold ${
-              activeTab === "prioritizer" ? "bg-indigo-600 text-white" : "text-slate-400"
-            }`}
-          >
-            Prioritizer
           </button>
           <button
             onClick={() => setActiveTab("daily")}
@@ -967,6 +938,78 @@ export default function App() {
                 
                 {/* TABLE STREAM (LHS) */}
                 <div className="lg:col-span-8 bg-slate-900 border border-slate-800 rounded-xl flex flex-col overflow-hidden min-h-[400px]">
+                  
+                  {priorityRecommendations.length > 0 && (
+                    <div className="p-4 bg-indigo-950/20 border-b border-indigo-500/20 text-slate-200">
+                      <div className="flex items-center justify-between gap-4 mb-3">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-amber-400 animate-pulse shrink-0" />
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-300">
+                            AI Portfolio Priority Alignment Suggestions
+                          </h4>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={handleApplyAllRecommendations}
+                            className="text-[10px] bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-2.5 py-1 rounded transition uppercase tracking-wider cursor-pointer"
+                          >
+                            Accept All
+                          </button>
+                          <button
+                            onClick={() => setPriorityRecommendations([])}
+                            className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-400 font-semibold px-2.5 py-1 rounded transition uppercase tracking-wider cursor-pointer"
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {priorityRecommendations.map((rec) => {
+                          const matchingTask = tasks.find(t => t.id === rec.taskId);
+                          if (!matchingTask) return null;
+                          return (
+                            <div key={rec.taskId} className="bg-slate-950/60 border border-slate-850 p-2.5 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[11px]">
+                              <div className="space-y-1">
+                                <p className="font-semibold text-slate-200 flex items-center gap-2">
+                                  <span>{matchingTask.title}:</span>
+                                  <span className="text-slate-400 font-normal">Recommend adjusting to</span>
+                                  <span className="text-indigo-400 font-bold uppercase">{rec.recommendedPriority}</span>
+                                </p>
+                                <p className="text-slate-400 leading-relaxed text-[10.5px]">
+                                  {rec.priorityReasoning}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => handleApplyPriorityRecommendation(rec)}
+                                className="sm:self-center self-start text-[9px] bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 px-2 py-1 rounded font-bold uppercase tracking-wider shrink-0 cursor-pointer"
+                              >
+                                Align Priority
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {priorityError && (
+                    <div className="p-3 bg-rose-950/20 border-b border-rose-900/40 text-rose-400 text-xs flex items-center justify-between">
+                      <span>{priorityError}</span>
+                      <button 
+                        onClick={() => setPriorityError(null)}
+                        className="text-slate-400 hover:text-slate-200 font-bold"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+
+                  {prioritizing && (
+                    <div className="p-4 bg-slate-950/40 border-b border-slate-800 text-slate-400 text-xs flex items-center gap-2">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+                      <span>Gemini is evaluating your complete workload portfolio for competing deadlines, collisions, and resource alignment...</span>
+                    </div>
+                  )}
                   
                   {/* Table Control Header */}
                   <div className="px-5 py-4 border-b border-slate-850 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-850/20">
@@ -1338,145 +1381,6 @@ export default function App() {
           )}
 
           {/* ==================================================================== */}
-          {/* TAB 3: COLLECTIVE WORK PRIORITIZER ENGINE */}
-          {/* ==================================================================== */}
-          {activeTab === "prioritizer" && (
-            <div className="space-y-6">
-              <div className="border-b border-slate-800 pb-3 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-md font-semibold text-slate-100 uppercase tracking-wider">Collective Work Prioritizer Engine</h2>
-                  <p className="text-xs text-slate-400">
-                    Use Gemini reasoning to analyze active workloads collectively and distribute priority tags based on delay risk vectors.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  disabled={prioritizing || tasks.filter(t => t.status !== "completed").length === 0}
-                  onClick={handleOptimisePriorities}
-                  className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-xs text-white font-bold px-4 py-2 rounded-lg flex items-center gap-1.5 shrink-0 transition cursor-pointer"
-                >
-                  {prioritizing ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Optimising Workstreams...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-                      Recalculate Priorities Allocation
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {priorityError && (
-                <div className="text-xs bg-rose-950/20 text-rose-400 border border-rose-900/40 p-3.5 rounded-lg">
-                  {priorityError}
-                </div>
-              )}
-
-              {/* Recommendation results view panel */}
-              {priorityRecommendations.length > 0 && (
-                <div className="bg-indigo-950/20 border border-indigo-500/20 rounded-xl p-4.5 space-y-4">
-                  <div className="flex items-center justify-between border-b border-indigo-900/60 pb-3">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span className="text-xs font-black uppercase tracking-wider text-indigo-300">
-                        AI Recommended Allocations Breakdown
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={handleApplyAllRecommendations}
-                      className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3.5 py-1.5 rounded transition"
-                    >
-                      Authorize All Adjustments
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {priorityRecommendations.map((rec) => {
-                      const associatedTask = tasks.find(t => t.id === rec.taskId);
-                      if (!associatedTask) return null;
-
-                      return (
-                        <div key={rec.taskId} className="bg-slate-950 border border-slate-850 p-4 rounded-lg flex flex-col justify-between gap-3 shadow shadow-slate-950/60">
-                          <div>
-                            <span className="text-[10px] text-slate-500 block mb-1">RECOGNIZED COMMITMENT</span>
-                            <span className="text-xs font-bold text-slate-200 block truncate">{associatedTask.title}</span>
-                            
-                            <div className="flex items-center gap-2 mt-2">
-                              <span className="text-[10px] text-slate-450 uppercase font-mono">Current:</span>
-                              <span className="text-[10px] uppercase font-mono bg-slate-900 px-1.5 py-0.5 rounded text-slate-450">
-                                {associatedTask.priority}
-                              </span>
-                              <span className="text-[10px] text-indigo-400 font-bold font-mono">→ Target:</span>
-                              <span className="text-[10px] uppercase font-bold font-mono bg-indigo-950/60 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-800/40">
-                                {rec.recommendedPriority}
-                              </span>
-                            </div>
-
-                            <p className="text-[11px] text-slate-400 leading-normal mt-3 bg-indigo-950/10 p-2 rounded italic">
-                              "{rec.priorityReasoning}"
-                            </p>
-                          </div>
-
-                          <button
-                            onClick={() => handleApplyPriorityRecommendation(rec)}
-                            className="w-full mt-3 py-1.5 bg-slate-900 hover:bg-slate-850 text-slate-300 text-[10px] font-bold uppercase tracking-wider rounded border border-slate-800 hover:border-slate-700 transition"
-                          >
-                            Establish Suggested Priority
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Static visual flow details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3">
-                  <h3 className="text-xs uppercase font-extrabold text-slate-300 tracking-wider">Prioritization Strategy Concept</h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    By default, commitments can be added with arbitrary priorities. However, true threat vectors must evaluate cumulative hours, overlapping calendars, and subtasks completeness coefficients.
-                  </p>
-                  <p className="text-xs text-slate-450 leading-relaxed italic border-l border-slate-700 pl-3">
-                    The single highest-threat task is promoted to **"Guardian Priority"** tags, aligning undivided attention parameters exclusively on the imminent target commitment block.
-                  </p>
-                </div>
-
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between">
-                  <div className="space-y-2">
-                    <h3 className="text-xs uppercase font-extrabold text-slate-350 tracking-wider">Active Stream Telemetry</h3>
-                    <div className="space-y-2 pt-1 font-mono text-[11px]">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Active Non-Completed Streams:</span>
-                        <span className="text-slate-200">{activeTasksCount}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Unanalyzed Risk Items:</span>
-                        <span className="text-slate-200">
-                          {tasks.filter(t => t.status !== "completed" && t.riskScore === 0).length}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    disabled={tasks.filter(t => t.status !== "completed").length === 0}
-                    onClick={handleOptimisePriorities}
-                    className="w-full mt-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg transition"
-                  >
-                    {prioritizing ? "Compiling Workstreams..." : "Establish Collective Threat Check Now"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ==================================================================== */}
           {/* TAB 4: DAILY PLAN BLOCK */}
           {/* ==================================================================== */}
           {activeTab === "daily" && (
@@ -1489,6 +1393,8 @@ export default function App() {
 
         </div>
       </main>
+        </>
+      )}
     </div>
   );
 }
