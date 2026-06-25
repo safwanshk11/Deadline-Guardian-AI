@@ -107,7 +107,7 @@ export default function RiskAnalysisWidget({ task, allTasks, onUpdateRisk }: Ris
         <div className="flex flex-col items-center justify-center p-6 text-center bg-slate-950/45 border border-dashed border-slate-800 rounded-lg">
           <HelpCircle className="w-8 h-8 text-slate-600 mb-2" />
           <p className="text-xs text-slate-400 max-w-[280px]">
-            Execute Gemini telemetry to estimate delay threat variables, buffers, and dependencies.
+            Execute AI diagnostics to estimate delay threat variables, buffers, and dependencies.
           </p>
           <button
             type="button"
@@ -170,7 +170,7 @@ export default function RiskAnalysisWidget({ task, allTasks, onUpdateRisk }: Ris
                   Mitigation Priority Directive
                 </span>
               </div>
-              <p className="text-[11px] text-stone-300 leading-relaxed italic">
+              <p className="text-[13px] text-stone-300 leading-relaxed italic">
                 "{task.suggestedMitigation}"
               </p>
             </div>

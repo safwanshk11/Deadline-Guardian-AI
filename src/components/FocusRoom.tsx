@@ -11,7 +11,9 @@ import {
   Compass, 
   Music,
   Sliders,
-  Volume1
+  Volume1,
+  Maximize,
+  Minimize
 } from "lucide-react";
 
 interface FocusRoomProps {
@@ -27,6 +29,7 @@ export const FocusRoom: React.FC<FocusRoomProps> = ({
 }) => {
   const [time, setTime] = useState<Date>(new Date());
   const [isMilitaryTime, setIsMilitaryTime] = useState<boolean>(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [soundType, setSoundType] = useState<SoundType>("none");
   const [volume, setVolume] = useState<number>(50); // 0 to 100
   const [isMuted, setIsMuted] = useState<boolean>(false);
@@ -34,6 +37,29 @@ export const FocusRoom: React.FC<FocusRoomProps> = ({
 
   const audioEngine = useRef<AudioEngine | null>(null);
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error("Error attempting to enable fullscreen:", err);
+      });
+    } else {
+      document.exitFullscreen().catch((err) => {
+        console.error("Error exiting fullscreen:", err);
+      });
+    }
+  };
 
   const resetIdleTimer = () => {
     setShowControls(true);
@@ -175,6 +201,22 @@ export const FocusRoom: React.FC<FocusRoomProps> = ({
       }`}
       id="immersive-focus-room"
     >
+      {/* REAL FULLSCREEN TOGGLE BUTTON */}
+      <button
+        id="focus-room-fullscreen-btn"
+        onClick={toggleFullscreen}
+        title={isFullscreen ? "Exit Fullscreen Mode" : "Enter Immersive Fullscreen Mode"}
+        className={`absolute top-6 right-6 p-2.5 rounded-xl border z-50 transition-all duration-300 cursor-pointer flex items-center justify-center ${
+          showControls ? "opacity-100 translate-y-0 animate-pulse" : "opacity-0 -translate-y-4 pointer-events-none"
+        } ${
+          isDarkMode 
+            ? "bg-slate-900/80 border-slate-800/80 text-slate-400 hover:text-indigo-400 hover:bg-slate-800" 
+            : "bg-white/80 border-slate-200 text-slate-600 hover:text-indigo-600 hover:bg-slate-100"
+        }`}
+      >
+        {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+      </button>
+
       <div className="flex flex-col items-center justify-center text-center space-y-6 max-w-full px-4 mb-24">
         {/* Date */}
         <p className={`text-xs sm:text-sm font-mono uppercase tracking-[0.25em] font-semibold transition-colors duration-500 ${

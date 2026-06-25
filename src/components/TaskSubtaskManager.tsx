@@ -152,8 +152,8 @@ export default function TaskSubtaskManager({ task, onUpdateSubtasks }: TaskSubta
       {/* Subtasks checklist */}
       {task.subtasks.length === 0 ? (
         <div className="text-center py-6 border border-dashed border-stone-900 rounded-lg bg-stone-950/60 mb-4">
-          <p className="text-xs text-stone-500 italic">No subtasks defined yet.</p>
-          <p className="text-[11px] text-stone-600 mt-1">
+          <p className="text-sm text-stone-400 italic">No subtasks defined yet.</p>
+          <p className="text-xs text-stone-500 mt-1.5">
             Use the "AI Generate Subtasks" button above to dynamically auto-schedule blocks.
           </p>
         </div>

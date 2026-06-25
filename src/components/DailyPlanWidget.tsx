@@ -63,9 +63,9 @@ export default function DailyPlanWidget({ tasks, plan, onSetPlan }: DailyPlanWid
           </div>
           <div>
             <h3 className="text-sm font-semibold text-slate-100 uppercase tracking-wider">
-              Gemini Daily action target
+              Sentinel Daily action target
             </h3>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[13px] text-slate-400">
               Synchronize concurrent commitments with customized schedule blocks.
             </p>
           </div>
@@ -236,14 +236,14 @@ export default function DailyPlanWidget({ tasks, plan, onSetPlan }: DailyPlanWid
                           </div>
 
                           {/* Activity Details */}
-                          <p className="text-xs text-slate-300 leading-relaxed pl-1">
+                          <p className="text-[13px] text-slate-300 leading-relaxed pl-1">
                             {item.activity}
                           </p>
                         </div>
 
                         {/* Database context details */}
                         {!isBreak && matchingTask && (
-                          <div className="flex flex-row md:flex-col items-start md:items-end gap-2 shrink-0 border-t md:border-t-0 border-slate-850 pt-2.5 md:pt-0 text-[10.5px]">
+                          <div className="flex flex-row md:flex-col items-start md:items-end gap-2 shrink-0 border-t md:border-t-0 border-slate-850 pt-2.5 md:pt-0 text-xs">
                             {matchingTask.category && (
                               <span className="text-slate-500 font-mono">
                                 Category: <strong className="text-slate-400 font-sans">{matchingTask.category}</strong>

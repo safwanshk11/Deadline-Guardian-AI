@@ -500,7 +500,7 @@ export default function App() {
             </div>
 
             <p className="text-xs sm:text-sm text-slate-400 max-w-xl leading-relaxed">
-              Deadline Guardian AI is a high-performance workspace designed to defend your target milestones. Actively parsing task values, estimating completion times, and loading Google Gemini telemetry, it acts as a digital copilot ensuring you navigate compressed schedules safely.
+              Deadline Guardian AI is a high-performance workspace designed to defend your target milestones. Actively parsing task values, estimating completion times, and loading advanced predictive telemetry, it acts as a digital copilot ensuring you navigate compressed schedules safely.
             </p>
           </header>
 
@@ -515,7 +515,7 @@ export default function App() {
                   <ShieldAlert className="w-4 h-4" />
                 </div>
                 <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-2">Sentinel Diagnostics</h3>
-                <p className="text-[11px] text-slate-400 leading-normal">
+                <p className="text-[13px] text-slate-400 leading-normal">
                   Tracks individual work pressures, mapping dates left, subtask completion counts, and historical slippages into live threat factors.
                 </p>
               </div>
@@ -525,8 +525,8 @@ export default function App() {
                   <ListTodo className="w-4 h-4" />
                 </div>
                 <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-2">Slicing Checklist</h3>
-                <p className="text-[11px] text-slate-400 leading-normal">
-                  Connects to advanced Gemini reasoning paths to break down complex, multi-day milestones into concrete, micro-action checklists.
+                <p className="text-[13px] text-slate-400 leading-normal">
+                  Connects to advanced intelligent analytics engines to break down complex, multi-day milestones into concrete, micro-action checklists.
                 </p>
               </div>
 
@@ -535,7 +535,7 @@ export default function App() {
                   <Clock className="w-4 h-4" />
                 </div>
                 <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-2">Daily Buffer Block</h3>
-                <p className="text-[11px] text-slate-400 leading-normal">
+                <p className="text-[13px] text-slate-400 leading-normal">
                   Synthesizes active targets into single chronological schedules matched specifically to bedtime boundaries and productive hour thresholds.
                 </p>
               </div>
@@ -555,7 +555,7 @@ export default function App() {
                 </div>
                 <div className="space-y-1">
                   <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Enlist Your Commitments</h4>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[13px] text-slate-400">
                     Tap the <strong className="text-indigo-455">New Commitment</strong> button to declare a task's title, approximate hours needed, and critical date limits.
                   </p>
                 </div>
@@ -567,7 +567,7 @@ export default function App() {
                 </div>
                 <div className="space-y-1">
                   <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Settle AI Checklist Targets</h4>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[13px] text-slate-400">
                     Click any commitment in your active guide list, then inside the right-hand inspection terminal, run <strong className="text-indigo-455">AI Generate Subtasks</strong> to auto-schedule micro-blocks.
                   </p>
                 </div>
@@ -579,8 +579,8 @@ export default function App() {
                 </div>
                 <div className="space-y-1">
                   <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Rebalance Priorities Collectively</h4>
-                  <p className="text-[11px] text-slate-400">
-                    Navigate to the <strong className="text-indigo-455">Optimal Prioritizer</strong> tab. Run collective Gemini checkmarks to dynamically correct overlapping deliverables.
+                  <p className="text-[13px] text-slate-400">
+                    Navigate to the <strong className="text-indigo-455">Optimal Prioritizer</strong> tab. Run collective intelligent priority sweeps to dynamically correct overlapping deliverables.
                   </p>
                 </div>
               </div>
@@ -591,7 +591,7 @@ export default function App() {
                 </div>
                 <div className="space-y-1">
                   <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Construct a Chronological Path</h4>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[13px] text-slate-400">
                     Flip over to the <strong className="text-indigo-455">Daily Schedule Block</strong> tab to translate targets into clean chronological hours, ensuring buffer rests protect physical bedtime safety margins.
                   </p>
                 </div>
@@ -605,7 +605,7 @@ export default function App() {
               <Info className="w-4 h-4 text-indigo-450" />
               SYSTEM ARCHITECT DOSSIER
             </h3>
-            <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+            <p className="text-[13px] text-slate-400 leading-relaxed font-sans">
               Forged by <strong className="text-slate-200">Safwan</strong>, an aspiring code marshal and mechanical keyboard builder operating inside terminal windows. Developed between late-night debug sessions and double espressos to eliminate creeping timeline slippages once and for all. Certified 100% procrastination-shielded.
             </p>
           </section>
@@ -786,7 +786,7 @@ export default function App() {
               onClick={handleOptimisePriorities}
               disabled={prioritizing || tasks.filter(t => t.status !== "completed").length === 0}
               className="bg-slate-950/60 hover:bg-slate-800 disabled:opacity-40 border border-slate-800 text-slate-300 hover:text-indigo-400 font-semibold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition whitespace-nowrap cursor-pointer shadow mr-1"
-              title="Run collective Gemini prioritizer checks on your entire portfolio of commitments"
+              title="Run collective AI prioritizer checks on your entire portfolio of commitments"
             >
               <RefreshCcw className={`w-3.5 h-3.5 text-indigo-400 ${prioritizing ? "animate-spin" : ""}`} />
               <span>Rebalance Priorities</span>
@@ -1006,7 +1006,7 @@ export default function App() {
                   {prioritizing && (
                     <div className="p-4 bg-slate-950/40 border-b border-slate-800 text-slate-400 text-xs flex items-center gap-2">
                       <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
-                      <span>Gemini is evaluating your complete workload portfolio for competing deadlines, collisions, and resource alignment...</span>
+                      <span>The system is evaluating your complete workload portfolio for competing deadlines, collisions, and resource alignment...</span>
                     </div>
                   )}
                   
@@ -1203,7 +1203,7 @@ export default function App() {
                         </h3>
 
                         {selectedTask.description && (
-                          <p className="text-[11px] text-slate-400 leading-relaxed mt-2.5 bg-slate-950/40 border border-slate-850 p-2.5 rounded-lg">
+                          <p className="text-[13px] text-slate-400 leading-relaxed mt-2.5 bg-slate-950/40 border border-slate-850 p-2.5 rounded-lg">
                             {selectedTask.description}
                           </p>
                         )}
@@ -1242,8 +1242,8 @@ export default function App() {
                   ) : (
                     <div className="flex flex-col items-center justify-center py-24 text-center">
                       <ListTodo className="w-10 h-10 text-slate-700 mb-3.5" />
-                      <p className="text-xs text-slate-450 font-medium">No commitment chosen</p>
-                      <p className="text-[11px] text-slate-550 mt-1 max-w-[200px]">
+                      <p className="text-sm text-slate-400 font-medium">No commitment chosen</p>
+                      <p className="text-xs text-slate-500 mt-1.5 max-w-[240px]">
                         Select or create a target commitment to view its subtasks and run risk diagnostics.
                       </p>
                     </div>
@@ -1256,8 +1256,8 @@ export default function App() {
               {/* TAB RE-ROUTING LINKS */}
               <section className="col-span-12 bg-indigo-950/10 border border-indigo-500/10 rounded-xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="space-y-1">
-                  <span className="text-xs font-bold text-indigo-300 uppercase tracking-wide block">Schedule Daily Focus Blocks</span>
-                  <p className="text-[11px] text-slate-400 leading-relaxed max-w-xl">
+                  <span className="text-sm font-bold text-indigo-300 uppercase tracking-wide block">Schedule Daily Focus Blocks</span>
+                  <p className="text-[13px] text-slate-400 leading-relaxed max-w-xl">
                     Convert active tasks and subtasks into a sequential study blocks timeline to keep your deadline safety buffers healthy.
                   </p>
                 </div>

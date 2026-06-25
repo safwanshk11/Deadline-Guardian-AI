@@ -202,7 +202,7 @@ export const AiMotivationPanel: React.FC<AiMotivationPanelProps> = ({
             }`}>
               <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold block">Gemini Directives Offline</span>
+                <span className="font-bold block">AI Directives Offline</span>
                 Configure your `GEMINI_API_KEY` in the Settings → Secrets panel or verify your internet connection.
               </div>
             </div>
