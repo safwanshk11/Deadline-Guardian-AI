@@ -870,79 +870,79 @@ export default function App() {
 
           {/* Step-by-Step App Walkthrough Guide */}
           <section className="space-y-4">
-            <h2 className="text-base font-mono tracking-widest text-indigo-400 uppercase text-center font-bold">
+            <h2 className="text-sm font-mono tracking-widest text-indigo-400 uppercase text-center font-bold">
               -- Operation Walkthrough --
             </h2>
             
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-inner shadow-slate-950/10">
               <div className="flex items-start gap-4 pb-5 border-b border-slate-800">
-                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-base font-bold shrink-0 mt-0.5">
+                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5">
                   1
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-base sm:text-lg font-bold text-slate-200 uppercase tracking-wider">Enlist Your Commitments</h4>
-                  <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-sans">
-                    Tap the <strong className="text-indigo-455">New Commitment</strong> button to declare a task's title, approximate hours needed, and critical date limits.
+                  <h4 className="text-sm sm:text-base font-bold text-slate-200 uppercase tracking-wider">Enlist Your Commitments</h4>
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-sans">
+                    Tap the <strong className="text-indigo-400">New Commitment</strong> button to declare a task's title, approximate hours needed, and critical date limits.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4 pb-5 border-b border-slate-800">
-                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-base font-bold shrink-0 mt-0.5">
+                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5">
                   2
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-base sm:text-lg font-bold text-slate-200 uppercase tracking-wider">Settle AI Checklist Targets</h4>
-                  <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-sans">
-                    Click any commitment in your active guide list, then inside the right-hand inspection terminal, run <strong className="text-indigo-455">AI Generate Subtasks</strong> to auto-schedule micro-blocks.
+                  <h4 className="text-sm sm:text-base font-bold text-slate-200 uppercase tracking-wider">Settle AI Checklist Targets</h4>
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-sans">
+                    Click any commitment in your active guide list, then inside the right-hand inspection terminal, run <strong className="text-indigo-400">AI Generate Subtasks</strong> to auto-schedule micro-blocks.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4 pb-5 border-b border-slate-800">
-                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-base font-bold shrink-0 mt-0.5">
+                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5">
                   3
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-base sm:text-lg font-bold text-slate-200 uppercase tracking-wider">Rebalance Priorities Collectively</h4>
-                  <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-sans">
-                    Navigate to the <strong className="text-indigo-455">Optimal Prioritizer</strong> tab. Run collective intelligent priority sweeps to dynamically correct overlapping deliverables.
+                  <h4 className="text-sm sm:text-base font-bold text-slate-200 uppercase tracking-wider">Rebalance Priorities Collectively</h4>
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-sans">
+                    Navigate to the <strong className="text-indigo-400">Optimal Prioritizer</strong> tab. Run collective intelligent priority sweeps to dynamically correct overlapping deliverables.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4 pb-5 border-b border-slate-800">
-                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-base font-bold shrink-0 mt-0.5">
+                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5">
                   4
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-base sm:text-lg font-bold text-slate-200 uppercase tracking-wider">Construct a Chronological Path</h4>
-                  <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-sans">
-                    Flip over to the <strong className="text-indigo-455">Daily Schedule Block</strong> tab to translate targets into clean chronological hours, ensuring buffer rests protect physical bedtime safety margins.
+                  <h4 className="text-sm sm:text-base font-bold text-slate-200 uppercase tracking-wider">Construct a Chronological Path</h4>
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-sans">
+                    Flip over to the <strong className="text-indigo-400">Daily Schedule Block</strong> tab to translate targets into clean chronological hours, ensuring buffer rests protect physical bedtime safety margins.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4 pb-5 border-b border-slate-800">
-                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-base font-bold shrink-0 mt-0.5">
+                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5">
                   5
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-base sm:text-lg font-bold text-slate-200 uppercase tracking-wider">Cultivate Shielding Habits</h4>
-                  <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-sans">
-                    Pivot to the <strong className="text-indigo-455">Habit Tracker</strong> tab to check off your daily procrastination shielding routines (like verifying safety margins, hydration, or quick focus blocks).
+                  <h4 className="text-sm sm:text-base font-bold text-slate-200 uppercase tracking-wider">Cultivate Shielding Habits</h4>
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-sans">
+                    Pivot to the <strong className="text-indigo-400">Habit Tracker</strong> tab to check off your daily procrastination shielding routines (like verifying safety margins, hydration, or quick focus blocks).
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-base font-bold shrink-0 mt-0.5">
+                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5">
                   6
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-base sm:text-lg font-bold text-slate-200 uppercase tracking-wider">Enter Isolation focus</h4>
-                  <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-sans">
-                    Launch the <strong className="text-indigo-455">Focus Room</strong> at the bottom-left corner of the workspace to isolate yourself in a beautiful fullscreen ambient environment to execute tasks.
+                  <h4 className="text-sm sm:text-base font-bold text-slate-200 uppercase tracking-wider">Enter Isolation focus</h4>
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-sans">
+                    Launch the <strong className="text-indigo-400">Focus Room</strong> at the bottom-left corner of the workspace to isolate yourself in a beautiful fullscreen ambient environment to execute tasks.
                   </p>
                 </div>
               </div>
