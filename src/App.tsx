@@ -7,13 +7,23 @@ import {
   Info, ExternalLink, Sun, Moon
 } from "lucide-react";
 import { motion } from "motion/react";
-import { Task, DailyActionPlan, PriorityRecommendation, SubTask } from "./types";
+import { Task, DailyActionPlan, PriorityRecommendation, SubTask, Habit } from "./types";
 import TaskForm from "./components/TaskForm";
 import TaskSubtaskManager from "./components/TaskSubtaskManager";
 import { AiMotivationPanel } from "./components/AiMotivationPanel";
 import RiskAnalysisWidget from "./components/RiskAnalysisWidget";
 import DailyPlanWidget from "./components/DailyPlanWidget";
 import { FocusRoom } from "./components/FocusRoom";
+import HabitTracker from "./components/HabitTracker";
+import {
+  initAuth,
+  googleSignIn,
+  logoutUser,
+  backupToFirestore,
+  loadFromFirestore,
+  syncCommitmentToGoogleCalendar
+} from "./lib/firebase";
+import { CloudLightning } from "lucide-react";
 
 // Seed realistic mock data to match the high-density placeholder design immediately
 const PRE_POPULATED_TASKS: Task[] = [
@@ -90,8 +100,227 @@ const PRE_POPULATED_TASKS: Task[] = [
   }
 ];
 
+const PRE_POPULATED_HABITS: Habit[] = [
+  {
+    id: "habit-1",
+    title: "Review active deadline safety margins",
+    streak: 3,
+    lastCompletedDate: (() => {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      return d.toISOString().split("T")[0];
+    })(),
+    history: [
+      (() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 3);
+        return d.toISOString().split("T")[0];
+      })(),
+      (() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 2);
+        return d.toISOString().split("T")[0];
+      })(),
+      (() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 1);
+        return d.toISOString().split("T")[0];
+      })()
+    ],
+    category: "Work",
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: "habit-2",
+    title: "Complete a 45-minute focused work block",
+    streak: 5,
+    lastCompletedDate: null,
+    history: [
+      (() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 5);
+        return d.toISOString().split("T")[0];
+      })(),
+      (() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 4);
+        return d.toISOString().split("T")[0];
+      })(),
+      (() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 3);
+        return d.toISOString().split("T")[0];
+      })(),
+      (() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 2);
+        return d.toISOString().split("T")[0];
+      })(),
+      (() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 1);
+        return d.toISOString().split("T")[0];
+      })()
+    ],
+    category: "Study",
+    createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: "habit-3",
+    title: "Sleep buffer check (no screen in bed)",
+    streak: 0,
+    lastCompletedDate: null,
+    history: [],
+    category: "Health",
+    createdAt: new Date().toISOString()
+  }
+];
+
 export default function App() {
   const [showIntro, setShowIntro] = useState<boolean>(true);
+
+  // ----------------------------------------------------------------------------
+  // GOOGLE & FIREBASE PERSISTENCE HANDLERS
+  // ----------------------------------------------------------------------------
+  const [user, setUser] = useState<any>(null);
+  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [syncStatusMessage, setSyncStatusMessage] = useState<string | null>(null);
+  const [calendarSyncingId, setCalendarSyncingId] = useState<string | null>(null);
+
+  // Initialize Auth state on load
+  useEffect(() => {
+    const unsubscribe = initAuth(
+      (currentUser, token) => {
+        setUser(currentUser);
+        setGoogleAccessToken(token);
+      },
+      () => {
+        setUser(null);
+        setGoogleAccessToken(null);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  const handleGoogleSignIn = async () => {
+    setIsSyncing(true);
+    setSyncStatusMessage("Connecting to Google Services...");
+    try {
+      const result = await googleSignIn();
+      if (result) {
+        setUser(result.user);
+        setGoogleAccessToken(result.accessToken);
+        setSyncStatusMessage("Successfully connected!");
+        
+        // Auto-load their cloud backup if it exists to merge/restore
+        try {
+          const backup = await loadFromFirestore(result.user.uid);
+          if (backup) {
+            const confirmMerge = window.confirm(
+              `Cloud backup found (saved on ${new Date(backup.updatedAt).toLocaleDateString()}). Would you like to restore your commitments and habits from the cloud?`
+            );
+            if (confirmMerge) {
+              if (backup.tasks) setTasks(backup.tasks);
+              if (backup.habits) setHabits(backup.habits);
+              if (backup.dailyPlan) setDailyPlan(backup.dailyPlan);
+              setSyncStatusMessage("Backup restored successfully!");
+            }
+          }
+        } catch (err) {
+          console.error("Auto-load backup failed:", err);
+        }
+      }
+    } catch (err: any) {
+      console.error("Sign in failed:", err);
+      setSyncStatusMessage(`Connection failed: ${err.message || err}`);
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setSyncStatusMessage(null), 4000);
+    }
+  };
+
+  const handleSignOut = async () => {
+    const confirmLogout = window.confirm("Are you sure you want to disconnect your Google cloud sync?");
+    if (!confirmLogout) return;
+    try {
+      await logoutUser();
+      setUser(null);
+      setGoogleAccessToken(null);
+      setSyncStatusMessage("Disconnected from Cloud Sync.");
+    } catch (err: any) {
+      console.error("Logout failed:", err);
+    } finally {
+      setTimeout(() => setSyncStatusMessage(null), 3000);
+    }
+  };
+
+  const handleBackupData = async () => {
+    if (!user) return;
+    setIsSyncing(true);
+    setSyncStatusMessage("Backing up data to Firestore...");
+    try {
+      await backupToFirestore(user.uid, tasks, habits, dailyPlan);
+      setSyncStatusMessage("Data successfully secured in Firestore!");
+    } catch (err: any) {
+      setSyncStatusMessage(`Backup failed: ${err.message || err}`);
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setSyncStatusMessage(null), 4000);
+    }
+  };
+
+  const handleRestoreData = async () => {
+    if (!user) return;
+    const confirmRestore = window.confirm(
+      "This will replace all your current local commitments and habits with your cloud backup. Proceed?"
+    );
+    if (!confirmRestore) return;
+    setIsSyncing(true);
+    setSyncStatusMessage("Retrieving cloud records...");
+    try {
+      const backup = await loadFromFirestore(user.uid);
+      if (backup) {
+        if (backup.tasks) setTasks(backup.tasks);
+        if (backup.habits) setHabits(backup.habits);
+        if (backup.dailyPlan) setDailyPlan(backup.dailyPlan);
+        setSyncStatusMessage("Cloud backup successfully restored!");
+      } else {
+        setSyncStatusMessage("No backup record found in Firestore.");
+      }
+    } catch (err: any) {
+      setSyncStatusMessage(`Restore failed: ${err.message || err}`);
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setSyncStatusMessage(null), 4000);
+    }
+  };
+
+  const handleSyncToGoogleCalendar = async (task: Task) => {
+    if (!googleAccessToken) {
+      // Prompt user to sign in
+      const signInConfirm = window.confirm(
+        "Google Calendar integration requires you to be connected with Google. Connect now?"
+      );
+      if (signInConfirm) {
+        await handleGoogleSignIn();
+      }
+      return;
+    }
+
+    setCalendarSyncingId(task.id);
+    try {
+      const result = await syncCommitmentToGoogleCalendar(googleAccessToken, task);
+      if (result && result.htmlLink) {
+        alert(`🛡️ Commitment synced! Created Google Calendar Event: ${task.title}`);
+      }
+    } catch (err: any) {
+      console.error("Calendar sync error:", err);
+      alert(`Calendar Sync failed: ${err.message || "Unknown error occurred."}`);
+    } finally {
+      setCalendarSyncingId(null);
+    }
+  };
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
@@ -118,6 +347,19 @@ export default function App() {
     return [];
   });
 
+  const [habits, setHabits] = useState<Habit[]>(() => {
+    const stored = localStorage.getItem("deadline_habits");
+    if (stored) {
+      try {
+        const decoded = JSON.parse(stored);
+        if (decoded && decoded.length > 0) return decoded;
+      } catch (e) {
+        console.error("Localstorage recovery failed for habits", e);
+      }
+    }
+    return PRE_POPULATED_HABITS;
+  });
+
   const [dailyPlan, setDailyPlan] = useState<DailyActionPlan | null>(() => {
     const stored = localStorage.getItem("deadline_daily_plan");
     if (stored) {
@@ -135,7 +377,7 @@ export default function App() {
     return tasks[0] || null;
   });
   const [isNewTaskFormOpen, setIsNewTaskFormOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "tasks" | "daily" | "focus">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "tasks" | "daily" | "habits" | "focus">("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("All");
   const [apiConfigured, setApiConfigured] = useState<boolean | null>(null);
@@ -149,6 +391,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("deadline_tasks", JSON.stringify(tasks));
   }, [tasks]);
+
+  useEffect(() => {
+    localStorage.setItem("deadline_habits", JSON.stringify(habits));
+  }, [habits]);
 
   useEffect(() => {
     if (dailyPlan) {
@@ -170,6 +416,66 @@ export default function App() {
         setApiConfigured(false);
       });
   }, []);
+
+  const handleAddHabit = (title: string, category: "Work" | "Study" | "Personal" | "Health" | "Other") => {
+    const newHabit: Habit = {
+      id: "habit-" + (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9)),
+      title,
+      streak: 0,
+      lastCompletedDate: null,
+      history: [],
+      category,
+      createdAt: new Date().toISOString()
+    };
+    setHabits(prev => [newHabit, ...prev]);
+    triggerConfetti(false);
+  };
+
+  const handleToggleHabit = (id: string) => {
+    const todayStr = new Date().toISOString().split("T")[0];
+    const yesterdayStr = (() => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      return yesterday.toISOString().split("T")[0];
+    })();
+
+    setHabits(prev => prev.map(habit => {
+      if (habit.id !== id) return habit;
+
+      const isCompletedToday = habit.lastCompletedDate === todayStr;
+      let newHistory = [...habit.history];
+      let newLastCompletedDate = habit.lastCompletedDate;
+      let newStreak = habit.streak;
+
+      if (isCompletedToday) {
+        newHistory = newHistory.filter(d => d !== todayStr);
+        newLastCompletedDate = newHistory.length > 0 ? newHistory[newHistory.length - 1] : null;
+        if (newStreak > 0) {
+          newStreak -= 1;
+        }
+      } else {
+        newHistory.push(todayStr);
+        newLastCompletedDate = todayStr;
+        if (habit.lastCompletedDate === yesterdayStr) {
+          newStreak += 1;
+        } else {
+          newStreak = 1;
+        }
+        triggerConfetti(false);
+      }
+
+      return {
+        ...habit,
+        streak: newStreak,
+        lastCompletedDate: newLastCompletedDate,
+        history: newHistory
+      };
+    }));
+  };
+
+  const handleDeleteHabit = (id: string) => {
+    setHabits(prev => prev.filter(h => h.id !== id));
+  };
 
   // Handlers for task mutation
   const handleAddTask = (newTaskInfo: Omit<Task, "id" | "createdAt" | "status" | "subtasks" | "riskScore" | "riskExplanation" | "suggestedMitigation">) => {
@@ -505,38 +811,58 @@ export default function App() {
           </header>
 
           {/* Key Domains section */}
-          <section className="space-y-4">
-            <h2 className="text-xs font-mono tracking-widest text-indigo-400 uppercase text-center font-bold">
+          <section className="space-y-6">
+            <h2 className="text-sm font-mono tracking-widest text-indigo-400 uppercase text-center font-bold">
               -- Core System Domains --
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-indigo-500/40 transition">
-                <div className="w-8 h-8 rounded bg-rose-950/60 border border-rose-800/40 flex items-center justify-center text-rose-400 mb-3">
-                  <ShieldAlert className="w-4 h-4" />
+            <div className="flex flex-wrap justify-center gap-5">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-rose-500/40 transition w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] max-w-sm flex flex-col items-center text-center">
+                <div className="w-10 h-10 rounded-lg bg-rose-950/60 border border-rose-800/40 flex items-center justify-center text-rose-400 mb-4 shrink-0">
+                  <ShieldAlert className="w-5 h-5" />
                 </div>
-                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-2">Sentinel Diagnostics</h3>
-                <p className="text-[13px] text-slate-400 leading-normal">
+                <h3 className="text-sm sm:text-base font-bold text-slate-200 uppercase tracking-wider mb-2">Sentinel Diagnostics</h3>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-sans">
                   Tracks individual work pressures, mapping dates left, subtask completion counts, and historical slippages into live threat factors.
                 </p>
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-teal-500/40 transition">
-                <div className="w-8 h-8 rounded bg-teal-950/60 border border-teal-800/40 flex items-center justify-center text-teal-400 mb-3">
-                  <ListTodo className="w-4 h-4" />
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-teal-500/40 transition w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] max-w-sm flex flex-col items-center text-center">
+                <div className="w-10 h-10 rounded-lg bg-teal-950/60 border border-teal-800/40 flex items-center justify-center text-teal-400 mb-4 shrink-0">
+                  <ListTodo className="w-5 h-5" />
                 </div>
-                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-2">Slicing Checklist</h3>
-                <p className="text-[13px] text-slate-400 leading-normal">
+                <h3 className="text-sm sm:text-base font-bold text-slate-200 uppercase tracking-wider mb-2">Slicing Checklist</h3>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-sans">
                   Connects to advanced intelligent analytics engines to break down complex, multi-day milestones into concrete, micro-action checklists.
                 </p>
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-amber-500/40 transition">
-                <div className="w-8 h-8 rounded bg-amber-950/60 border border-amber-800/40 flex items-center justify-center text-amber-400 mb-3">
-                  <Clock className="w-4 h-4" />
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-amber-500/40 transition w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] max-w-sm flex flex-col items-center text-center">
+                <div className="w-10 h-10 rounded-lg bg-amber-950/60 border border-amber-800/40 flex items-center justify-center text-amber-400 mb-4 shrink-0">
+                  <Clock className="w-5 h-5" />
                 </div>
-                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider mb-2">Daily Buffer Block</h3>
-                <p className="text-[13px] text-slate-400 leading-normal">
+                <h3 className="text-sm sm:text-base font-bold text-slate-200 uppercase tracking-wider mb-2">Daily Buffer Block</h3>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-sans">
                   Synthesizes active targets into single chronological schedules matched specifically to bedtime boundaries and productive hour thresholds.
+                </p>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-emerald-500/40 transition w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] max-w-sm flex flex-col items-center text-center">
+                <div className="w-10 h-10 rounded-lg bg-emerald-950/60 border border-emerald-800/40 flex items-center justify-center text-emerald-400 mb-4 shrink-0">
+                  <Award className="w-5 h-5" />
+                </div>
+                <h3 className="text-sm sm:text-base font-bold text-slate-200 uppercase tracking-wider mb-2">Defensive Habit Tracker</h3>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-sans">
+                  Enlists daily proactive time-shields and micro-routines to systematically build resilience and eliminate root causes of task avoidance.
+                </p>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-indigo-500/40 transition w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)] max-w-sm flex flex-col items-center text-center">
+                <div className="w-10 h-10 rounded-lg bg-indigo-950/60 border border-indigo-800/40 flex items-center justify-center text-indigo-400 mb-4 shrink-0">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <h3 className="text-sm sm:text-base font-bold text-slate-200 uppercase tracking-wider mb-2">Immersive Study Dome</h3>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-sans">
+                  Blocks cognitive clutter by establishing a gorgeous fullscreen focus terminal paired with custom white noise and real-time timers.
                 </p>
               </div>
             </div>
@@ -544,69 +870,94 @@ export default function App() {
 
           {/* Step-by-Step App Walkthrough Guide */}
           <section className="space-y-4">
-            <h2 className="text-xs font-mono tracking-widest text-indigo-400 uppercase text-center font-bold">
+            <h2 className="text-base font-mono tracking-widest text-indigo-400 uppercase text-center font-bold">
               -- Operation Walkthrough --
             </h2>
             
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4 shadow-inner shadow-slate-950/10">
-              <div className="flex items-start gap-4 pb-4 border-b border-slate-800">
-                <div className="w-6 h-6 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-inner shadow-slate-950/10">
+              <div className="flex items-start gap-4 pb-5 border-b border-slate-800">
+                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-base font-bold shrink-0 mt-0.5">
                   1
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Enlist Your Commitments</h4>
-                  <p className="text-[13px] text-slate-400">
+                  <h4 className="text-base sm:text-lg font-bold text-slate-200 uppercase tracking-wider">Enlist Your Commitments</h4>
+                  <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-sans">
                     Tap the <strong className="text-indigo-455">New Commitment</strong> button to declare a task's title, approximate hours needed, and critical date limits.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 pb-4 border-b border-slate-800">
-                <div className="w-6 h-6 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5">
+              <div className="flex items-start gap-4 pb-5 border-b border-slate-800">
+                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-base font-bold shrink-0 mt-0.5">
                   2
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Settle AI Checklist Targets</h4>
-                  <p className="text-[13px] text-slate-400">
+                  <h4 className="text-base sm:text-lg font-bold text-slate-200 uppercase tracking-wider">Settle AI Checklist Targets</h4>
+                  <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-sans">
                     Click any commitment in your active guide list, then inside the right-hand inspection terminal, run <strong className="text-indigo-455">AI Generate Subtasks</strong> to auto-schedule micro-blocks.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 pb-4 border-b border-slate-800">
-                <div className="w-6 h-6 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5">
+              <div className="flex items-start gap-4 pb-5 border-b border-slate-800">
+                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-base font-bold shrink-0 mt-0.5">
                   3
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Rebalance Priorities Collectively</h4>
-                  <p className="text-[13px] text-slate-400">
+                  <h4 className="text-base sm:text-lg font-bold text-slate-200 uppercase tracking-wider">Rebalance Priorities Collectively</h4>
+                  <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-sans">
                     Navigate to the <strong className="text-indigo-455">Optimal Prioritizer</strong> tab. Run collective intelligent priority sweeps to dynamically correct overlapping deliverables.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-4">
-                <div className="w-6 h-6 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5">
+              <div className="flex items-start gap-4 pb-5 border-b border-slate-800">
+                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-base font-bold shrink-0 mt-0.5">
                   4
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Construct a Chronological Path</h4>
-                  <p className="text-[13px] text-slate-400">
+                  <h4 className="text-base sm:text-lg font-bold text-slate-200 uppercase tracking-wider">Construct a Chronological Path</h4>
+                  <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-sans">
                     Flip over to the <strong className="text-indigo-455">Daily Schedule Block</strong> tab to translate targets into clean chronological hours, ensuring buffer rests protect physical bedtime safety margins.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4 pb-5 border-b border-slate-800">
+                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-base font-bold shrink-0 mt-0.5">
+                  5
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-base sm:text-lg font-bold text-slate-200 uppercase tracking-wider">Cultivate Shielding Habits</h4>
+                  <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-sans">
+                    Pivot to the <strong className="text-indigo-455">Habit Tracker</strong> tab to check off your daily procrastination shielding routines (like verifying safety margins, hydration, or quick focus blocks).
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-8 h-8 rounded-full bg-indigo-950 border border-indigo-700 text-indigo-300 flex items-center justify-center font-mono text-base font-bold shrink-0 mt-0.5">
+                  6
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-base sm:text-lg font-bold text-slate-200 uppercase tracking-wider">Enter Isolation focus</h4>
+                  <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-sans">
+                    Launch the <strong className="text-indigo-455">Focus Room</strong> at the bottom-left corner of the workspace to isolate yourself in a beautiful fullscreen ambient environment to execute tasks.
                   </p>
                 </div>
               </div>
             </div>
           </section>
 
+
           {/* About Me Section */}
-          <section className="bg-indigo-950/10 border border-indigo-800/20 rounded-xl p-5 text-center sm:text-left">
-            <h3 className="text-xs font-mono font-bold text-indigo-300 uppercase tracking-wider mb-2 flex items-center sm:justify-start justify-center gap-1.5">
-              <Info className="w-4 h-4 text-indigo-450" />
+          <section className="bg-indigo-950/10 border border-indigo-800/20 rounded-2xl p-6 sm:p-8 text-center sm:text-left">
+            <h3 className="text-sm font-mono font-bold text-indigo-300 uppercase tracking-wider mb-3 flex items-center sm:justify-start justify-center gap-2">
+              <Info className="w-5 h-5 text-indigo-450" />
               SYSTEM ARCHITECT DOSSIER
             </h3>
-            <p className="text-[13px] text-slate-400 leading-relaxed font-sans">
-              Forged by <strong className="text-slate-200">Safwan</strong>, an aspiring code marshal and mechanical keyboard builder operating inside terminal windows. Developed between late-night debug sessions and double espressos to eliminate creeping timeline slippages once and for all. Certified 100% procrastination-shielded.
+            <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-sans italic font-medium">
+              "Forged by <strong className="text-slate-200">Safwan</strong>, an aspiring code marshal and mechanical keyboard builder operating inside terminal windows. Developed between late-night debug sessions and double espressos to eliminate creeping timeline slippages once and for all. Certified 100% procrastination-shielded."
             </p>
           </section>
 
@@ -669,6 +1020,93 @@ export default function App() {
           </div>
         </div>
 
+        {/* Google Cloud Sync Controller */}
+        <div className="p-4 border-b border-slate-800 bg-slate-950/20 space-y-2">
+          {!user ? (
+            <div className="space-y-2">
+              <span className="text-[9px] text-slate-500 uppercase tracking-widest font-mono block">
+                Secure Cloud Sync
+              </span>
+              <button
+                onClick={handleGoogleSignIn}
+                disabled={isSyncing}
+                className="w-full bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white font-bold text-[10px] py-2 px-3 border border-slate-800 rounded-lg flex items-center justify-center gap-2 transition cursor-pointer shadow-sm disabled:opacity-50"
+              >
+                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 48 48">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
+                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
+                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
+                </svg>
+                <span>Connect with Google</span>
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2 max-w-full">
+                {user.photoURL ? (
+                  <img 
+                    src={user.photoURL} 
+                    alt={user.displayName || "User"} 
+                    className="w-6 h-6 rounded-full border border-indigo-500/50 shrink-0" 
+                    referrerPolicy="no-referrer" 
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[9px] font-bold text-white uppercase shrink-0">
+                    {(user.displayName || user.email || "U")[0]}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-bold text-slate-200 block truncate leading-tight">
+                    {user.displayName || "Google User"}
+                  </span>
+                  <span className="text-[8px] text-emerald-400 font-mono flex items-center gap-1">
+                    <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"></span>
+                    cloud connected
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  onClick={handleBackupData}
+                  disabled={isSyncing}
+                  className="bg-indigo-600 hover:bg-indigo-500 border border-indigo-500/30 text-white font-bold text-[9px] py-1.5 px-2 rounded transition cursor-pointer flex items-center justify-center gap-1 shadow-sm disabled:opacity-50"
+                  title="Upload all local tasks and habits to Firebase secure cloud storage"
+                >
+                  <CloudLightning className="w-2.5 h-2.5 text-indigo-200 shrink-0" />
+                  <span>Backup</span>
+                </button>
+                <button
+                  onClick={handleRestoreData}
+                  disabled={isSyncing}
+                  className="bg-slate-950 hover:bg-slate-800 border border-slate-850 text-slate-300 hover:text-white font-bold text-[9px] py-1.5 px-2 rounded transition cursor-pointer flex items-center justify-center gap-1 disabled:opacity-50"
+                  title="Restore tasks and habits from your cloud backup"
+                >
+                  <RefreshCcw className="w-2.5 h-2.5 text-slate-400 shrink-0" />
+                  <span>Restore</span>
+                </button>
+              </div>
+
+              <div className="flex justify-between items-center text-[8px] text-slate-500 pt-1.5 border-t border-slate-850 font-mono">
+                <span>Firestore Backup</span>
+                <button 
+                  onClick={handleSignOut} 
+                  className="hover:text-rose-400 underline cursor-pointer"
+                >
+                  Disconnect
+                </button>
+              </div>
+            </div>
+          )}
+
+          {syncStatusMessage && (
+            <div className="text-[9px] font-mono text-indigo-300 animate-pulse text-center bg-indigo-950/40 border border-indigo-900/30 py-1 px-2 rounded">
+              {syncStatusMessage}
+            </div>
+          )}
+        </div>
+
         {/* Tab Controls Navigation */}
         <nav className="flex-1 py-5 px-3.5 space-y-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
           <button
@@ -713,29 +1151,48 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => setActiveTab("focus")}
+            onClick={() => setActiveTab("habits")}
             className={`w-full text-left px-3.5 py-2.5 rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
-              activeTab === "focus"
+              activeTab === "habits"
                 ? "bg-indigo-600 border border-indigo-500/40 text-white"
                 : "hover:bg-slate-800 text-slate-400"
             }`}
           >
-            <span>Focus Room</span>
+            <span>Habit Tracker</span>
+            <span className="bg-emerald-950 text-emerald-400 border border-emerald-800/40 text-[10px] px-2 py-0.5 rounded-full font-mono font-bold animate-pulse">
+              {habits.filter(h => h.lastCompletedDate === new Date().toISOString().split('T')[0]).length}/{habits.length}
+            </span>
           </button>
         </nav>
 
-        {/* Footer Monitor Info */}
-        {apiConfigured === false && (
-          <div className="p-4 mt-auto border-t border-slate-800 bg-slate-950/30">
-            <div className="bg-red-950/30 border border-red-900/40 rounded-lg p-3 text-[11px] text-red-200">
+        {/* Pinned Bottom Focus Room & Diagnostic Panel */}
+        <div className="p-4 mt-auto border-t border-slate-800 bg-slate-950/20 space-y-3 shrink-0">
+          <button
+            onClick={() => setActiveTab("focus")}
+            className={`w-full text-left px-3.5 py-3 rounded-xl flex items-center gap-2.5 transition-all duration-300 font-semibold uppercase tracking-wider text-xs border cursor-pointer ${
+              activeTab === "focus"
+                ? "bg-indigo-600 border-indigo-500/40 text-white shadow shadow-indigo-950"
+                : "bg-slate-950/40 border-slate-850 hover:border-indigo-500/40 hover:bg-slate-950/80 text-slate-400 hover:text-indigo-400"
+            }`}
+          >
+            <Clock className="w-4 h-4 shrink-0 text-indigo-400 animate-pulse" />
+            <div className="flex flex-col items-start leading-tight">
+              <span>Focus Room</span>
+              <span className="text-[9px] font-mono font-normal lowercase text-slate-500 mt-0.5">immersive study dome</span>
+            </div>
+          </button>
+
+          {apiConfigured === false && (
+            <div className="bg-red-950/30 border border-red-900/40 rounded-lg p-3.5 text-[11px] text-red-200">
               <span className="font-bold flex items-center gap-1 text-red-400 mb-1">
                 <AlertTriangle className="w-3.5 h-3.5" />
                 No API Key Detected
               </span>
               Verify <code className="bg-red-950/60 px-1 py-0.5 rounded font-mono">GEMINI_API_KEY</code> setup in the Settings Secret box to enable real-time risk diagnostic calculations.
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
       </aside>
 
       {/* MAIN CONTAINER AREA */}
@@ -826,7 +1283,15 @@ export default function App() {
               activeTab === "daily" ? "bg-indigo-600 text-white" : "text-slate-400"
             }`}
           >
-            Action Schedule
+            Action
+          </button>
+          <button
+            onClick={() => setActiveTab("habits")}
+            className={`px-3 py-1.5 rounded text-xs tracking-tight font-semibold ${
+              activeTab === "habits" ? "bg-indigo-600 text-white" : "text-slate-400"
+            }`}
+          >
+            Habits
           </button>
           <button
             onClick={() => setActiveTab("focus")}
@@ -834,9 +1299,10 @@ export default function App() {
               activeTab === "focus" ? "bg-indigo-600 text-white" : "text-slate-400"
             }`}
           >
-            Focus Room
+            Focus
           </button>
         </div>
+
 
         {/* INNER CONTENT SCROLL CONTAINER */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7 space-y-6">
@@ -1222,6 +1688,33 @@ export default function App() {
                         onUpdateRisk={handleUpdateRisk}
                       />
 
+                      {/* Google Calendar Sync Section */}
+                      <div className="border-t border-slate-800/85 pt-3 mt-3 flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">
+                            Calendar Integration
+                          </span>
+                          {!googleAccessToken && (
+                            <span className="text-[8px] text-slate-400 font-mono italic">disconnected</span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          disabled={calendarSyncingId === selectedTask.id}
+                          onClick={() => handleSyncToGoogleCalendar(selectedTask)}
+                          className="w-full bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-300 hover:text-white font-bold text-[11px] py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50"
+                        >
+                          {calendarSyncingId === selectedTask.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+                          ) : (
+                            <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                          )}
+                          <span>
+                            {googleAccessToken ? "Sync to Google Calendar" : "Connect Google & Sync Event"}
+                          </span>
+                        </button>
+                      </div>
+
                       {/* Delete action footer */}
                       <div className="pt-2 flex justify-end">
                         <button
@@ -1387,6 +1880,19 @@ export default function App() {
               tasks={tasks}
               plan={dailyPlan}
               onSetPlan={(newPlan) => setDailyPlan(newPlan)}
+            />
+          )}
+
+          {/* ==================================================================== */}
+          {/* TAB 5: HABIT TRACKER */}
+          {/* ==================================================================== */}
+          {activeTab === "habits" && (
+            <HabitTracker
+              habits={habits}
+              onAddHabit={handleAddHabit}
+              onToggleHabit={handleToggleHabit}
+              onDeleteHabit={handleDeleteHabit}
+              isDarkMode={isDarkMode}
             />
           )}
 

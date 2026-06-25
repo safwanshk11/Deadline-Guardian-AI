@@ -49,3 +49,13 @@ export interface MotivationData {
   recommendedAction: string;
 }
 
+export interface Habit {
+  id: string;
+  title: string;
+  streak: number;
+  lastCompletedDate: string | null; // YYYY-MM-DD
+  history: string[]; // dates completed e.g. "2026-06-25"
+  category: "Work" | "Study" | "Personal" | "Health" | "Other";
+  createdAt: string;
+}
+
