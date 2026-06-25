@@ -176,8 +176,48 @@ const PRE_POPULATED_HABITS: Habit[] = [
   }
 ];
 
+const TUTORIAL_STEPS = [
+  {
+    title: "1. The Main Tactical Bridge",
+    tab: "dashboard" as const,
+    description: "Your operations center. See your active portfolio status, total active checklists, daily stress metrics, and an AI coaching panel that changes behavior depending on current work pressures.",
+    note: "💡 Tap the 'Aesthetic Coach' tab on the right to receive dynamic motivational strategies."
+  },
+  {
+    title: "2. Intelligent Portfolio Slicing",
+    tab: "tasks" as const,
+    description: "Click on any active task here. Inside its right inspection terminal, click 'AI Generate Subtasks'. Gemini will dynamically slice your task into 3-7 manageable micro-checklists.",
+    note: "💡 This avoids procrastination by breaking complex deliverables into realistic hour blocks."
+  },
+  {
+    title: "3. Daily Action Schedule Plan",
+    tab: "daily" as const,
+    description: "Translate targets into chronological hour schedules. Configure your sleep targets and focus boundaries, then let Gemini lay out a highly robust hourly checklist.",
+    note: "💡 Sleep limits act as physical buffer block shields to prevent deadline-induced burnout."
+  },
+  {
+    title: "4. Proactive Defensive Habits",
+    tab: "habits" as const,
+    description: "Establish defensive habits categorized under Work, Study, Health, or Personal routines. Check them off daily to build unbreakable productivity shields.",
+    note: "💡 Click 'Secure Shield Habit' to easily add your custom micro-shield habits."
+  },
+  {
+    title: "5. Deep Work Immersive Dome",
+    tab: "dashboard" as const,
+    description: "Ready for deep isolation? Open the Focus Dome from the sidebar launcher at the bottom-left to engage custom-synthesized ambient sounds and real-time countdown tracking.",
+    note: "💡 Uses native browser Web Audio synthesis to generate eye-safe focus soundscapes."
+  }
+];
+
 export default function App() {
-  const [showIntro, setShowIntro] = useState<boolean>(true);
+  const [showIntro, setShowIntro] = useState<boolean>(() => {
+    const onboarded = localStorage.getItem("deadline_guardian_onboarded_v1") === "true";
+    return !onboarded;
+  });
+
+  // Onboarding & Tutorial State
+  const [showTutorialPrompt, setShowTutorialPrompt] = useState<boolean>(false);
+  const [tutorialStep, setTutorialStep] = useState<number | null>(null);
 
   // ----------------------------------------------------------------------------
   // GOOGLE & FIREBASE PERSISTENCE HANDLERS
@@ -194,6 +234,13 @@ export default function App() {
       (currentUser, token) => {
         setUser(currentUser);
         setGoogleAccessToken(token);
+        if (currentUser) {
+          // Permanently disable intro & tutorial if signed in/linked Gmail
+          setShowIntro(false);
+          setTutorialStep(null);
+          setShowTutorialPrompt(false);
+          localStorage.setItem("deadline_guardian_onboarded_v1", "true");
+        }
       },
       () => {
         setUser(null);
@@ -212,6 +259,12 @@ export default function App() {
         setUser(result.user);
         setGoogleAccessToken(result.accessToken);
         setSyncStatusMessage("Successfully connected!");
+        
+        // Permanently bypass and store onboarding
+        setShowIntro(false);
+        setTutorialStep(null);
+        setShowTutorialPrompt(false);
+        localStorage.setItem("deadline_guardian_onboarded_v1", "true");
         
         // Auto-load their cloud backup if it exists to merge/restore
         try {
@@ -378,6 +431,26 @@ export default function App() {
   });
   const [isNewTaskFormOpen, setIsNewTaskFormOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"dashboard" | "tasks" | "daily" | "habits" | "focus">("dashboard");
+
+  // Auto-switch tabs to show highlighted screens as user steps through the walkthrough
+  useEffect(() => {
+    if (tutorialStep !== null && tutorialStep >= 0 && tutorialStep < 5) {
+      const stepTabs: ("dashboard" | "tasks" | "daily" | "habits" | "focus")[] = [
+        "dashboard",
+        "tasks",
+        "daily",
+        "habits",
+        "dashboard"
+      ];
+      setActiveTab(stepTabs[tutorialStep]);
+      
+      // If tasks step, select the first task to show the inspection subtask panel
+      if (stepTabs[tutorialStep] === "tasks" && tasks.length > 0) {
+        setSelectedTask(tasks[0]);
+      }
+    }
+  }, [tutorialStep]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("All");
   const [apiConfigured, setApiConfigured] = useState<boolean | null>(null);
@@ -965,7 +1038,12 @@ export default function App() {
           <div className="flex flex-col items-center pt-2">
             <button
               onClick={() => {
-                setShowIntro(false);
+                const onboarded = localStorage.getItem("deadline_guardian_onboarded_v1") === "true";
+                if (!onboarded && !user) {
+                  setShowTutorialPrompt(true);
+                } else {
+                  setShowIntro(false);
+                }
               }}
               className="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-500 hover:scale-[1.02] border border-indigo-500/20 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition cursor-pointer shadow-lg shadow-indigo-950 flex items-center gap-2"
             >
@@ -983,6 +1061,53 @@ export default function App() {
         <footer className="text-center text-[10px] text-slate-600 uppercase font-mono tracking-widest mt-8">
           Deadline Guardian AI - Core Sentinel Build v1.02
         </footer>
+
+        {/* Onboarding Tour Prompt Modal (Now safely inside early-return block overlay) */}
+        {showTutorialPrompt && (
+          <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-[999] select-none">
+            <div className="bg-slate-900 border border-indigo-500/30 rounded-2xl p-6 sm:p-8 max-w-md w-full text-center space-y-6 shadow-2xl shadow-indigo-950 animate-in fade-in zoom-in-95 duration-200">
+              <div className="w-14 h-14 rounded-2xl bg-indigo-950/60 border border-indigo-500/30 flex items-center justify-center mx-auto text-indigo-400">
+                <Sparkles className="w-7 h-7 animate-pulse" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-slate-100 uppercase tracking-wider">
+                  🛡️ Initializing Core Systems
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-sans">
+                  Welcome to <strong className="text-indigo-400">Deadline Guardian AI</strong>! Would you like a brief 1-minute tactical walkthrough of your workspace tools to maximize your defense efficiency?
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowIntro(false);
+                    setShowTutorialPrompt(false);
+                    setTutorialStep(0);
+                    setActiveTab("dashboard");
+                  }}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition cursor-pointer shadow-lg shadow-indigo-950 flex items-center justify-center gap-1.5 hover:scale-[1.02]"
+                >
+                  <span>Launch Tactical Tour</span>
+                  <Sparkles className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    setShowIntro(false);
+                    setShowTutorialPrompt(false);
+                    setTutorialStep(null);
+                    localStorage.setItem("deadline_guardian_onboarded_v1", "true");
+                  }}
+                  className="w-full py-3 bg-slate-850 hover:bg-slate-800 text-slate-300 font-bold text-xs uppercase tracking-widest rounded-xl transition cursor-pointer border border-slate-700 flex items-center justify-center hover:scale-[1.02]"
+                >
+                  Skip & Go Direct
+                </button>
+              </div>
+              <div className="text-[10px] text-slate-500 uppercase font-mono">
+                You can remain anonymous or connect Google sync at any time.
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -1900,6 +2025,78 @@ export default function App() {
       </main>
         </>
       )}
+
+      {tutorialStep !== null && (
+        <div className="fixed bottom-6 right-6 max-w-sm w-full bg-slate-900/95 backdrop-blur-md border border-indigo-500/50 rounded-2xl shadow-2xl p-5 z-[999] animate-in fade-in slide-in-from-bottom-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] font-mono font-bold tracking-wider text-indigo-400 uppercase bg-indigo-950/60 border border-indigo-800/40 px-2.5 py-1 rounded-full">
+              🛡️ SYSTEM SENTINEL TOUR ({tutorialStep + 1} / 5)
+            </span>
+            <button
+              onClick={() => {
+                setTutorialStep(null);
+                localStorage.setItem("deadline_guardian_onboarded_v1", "true");
+              }}
+              className="text-xs text-slate-500 hover:text-slate-300 transition cursor-pointer uppercase font-mono tracking-wider font-bold"
+            >
+              Skip
+            </button>
+          </div>
+
+          <div className="space-y-1.5">
+            <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider">
+              {TUTORIAL_STEPS[tutorialStep].title}
+            </h3>
+            <p className="text-xs text-slate-300 leading-relaxed font-sans">
+              {TUTORIAL_STEPS[tutorialStep].description}
+            </p>
+          </div>
+
+          <div className="bg-indigo-950/40 border border-indigo-900/30 p-3 rounded-lg text-[10px] text-indigo-300 font-mono flex items-start gap-2">
+            <span className="shrink-0 text-indigo-400">💡</span>
+            <p className="leading-normal">{TUTORIAL_STEPS[tutorialStep].note}</p>
+          </div>
+
+          <div className="text-[10px] uppercase font-mono text-emerald-400 bg-emerald-950/30 border border-emerald-900/30 px-2.5 py-1.5 rounded flex items-center gap-1.5 justify-center">
+            <span className="w-1.5 h-1.5 bg-emerald-450 rounded-full animate-ping"></span>
+            <span>Focus Active Screen: Tab {TUTORIAL_STEPS[tutorialStep].tab.toUpperCase()}</span>
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+            <button
+              onClick={() => setTutorialStep(prev => prev !== null && prev > 0 ? prev - 1 : prev)}
+              disabled={tutorialStep === 0}
+              className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 hover:text-white transition disabled:opacity-30 disabled:pointer-events-none"
+            >
+              ← Back
+            </button>
+            <button
+              onClick={() => {
+                if (tutorialStep < 4) {
+                  setTutorialStep(prev => prev !== null ? prev + 1 : prev);
+                } else {
+                  setTutorialStep(null);
+                  localStorage.setItem("deadline_guardian_onboarded_v1", "true");
+                  try {
+                    confetti({
+                      particleCount: 50,
+                      spread: 60,
+                      origin: { y: 0.8 },
+                      colors: ["#6366f1", "#10b981", "#fbbf24"]
+                    });
+                  } catch (e) {
+                    console.error("Confetti run failed:", e);
+                  }
+                }
+              }}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-widest rounded-lg transition shadow-md cursor-pointer flex items-center gap-1 hover:scale-105"
+            >
+              <span>{tutorialStep === 4 ? "SYSTEMS READY" : "Next System →"}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
