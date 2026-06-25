@@ -1,40 +1,175 @@
-# Deadline Guardian AI — Project Description
+# 🛡️ Deadline Guardian AI
 
-## Problem Statement Selected
+> **High-Performance Workspace Defensive Copilot** — Defending your target milestones against compressed timelines using multi-layered Gemini analysis, procedural focus-shield soundscapes, and native Google Cloud & Calendar synchronization.
 
-**The Last-Minute Life Saver** — Students, professionals, and entrepreneurs frequently miss deadlines, assignments, meetings, and important commitments because traditional productivity tools rely on passive reminders that are easy to ignore and do little to help users actually complete their work.
+![Deadline Guardian AI Hero Banner](./assets/hero_banner.jpg)
 
-## Solution Overview
+---
 
-Deadline Guardian AI is a productivity companion that treats a user's commitments as an interconnected portfolio rather than a flat to-do list. Instead of issuing isolated reminders, it uses Gemini to reason across all of a user's active tasks at once — surfacing workload collisions, competing deadlines, and the single commitment most likely to derail the user's week — and turns that analysis into concrete next actions: broken-down subtasks, a re-prioritized task list, and an hour-by-hour daily schedule.
+## 🎯 Problem Statement & Core Mission
 
-The goal is to move users from "I have a deadline coming up" to "here is exactly what to do in the next 30 minutes," which is the core gap the challenge brief identifies in passive reminder tools.
+### **The Last-Minute Life Saver**
+Students, professionals, and entrepreneurs frequently derail on deadlines, assignments, and vital commitments. Traditional productivity tools rely on passive push notifications that are easily dismissed, offering no concrete action when workloads collide.
 
-## Key Features
+**Deadline Guardian AI** transforms passive checklist management into an active, intelligent, defensive framework. It treats commitments as an **interconnected portfolio**, dynamically predicting schedule bottlenecks, surfacing underlying risks, and orchestrating step-by-step mitigation plans using structural Gemini generative schemas.
 
-- **AI Subtask Generation** — Given a task title, description, category, and target hours, Gemini breaks the task into 3–7 atomic, actionable subtasks with time estimates, so a vague goal becomes a concrete checklist.
-- **Portfolio-Level Risk Analysis** — Rather than scoring deadline risk in isolation, the app sends a task's full context alongside every other active commitment, so Gemini can flag workload collisions and explain *why* a deadline is risky relative to everything else competing for the user's time.
-- **Intelligent Task Prioritization** — Gemini reviews the entire task list together and recommends priority levels (including a reserved "guardian-priority" tier for the single highest-risk commitment), with a short reasoning explanation attached to each recommendation.
-- **AI-Generated Daily Action Plan** — A full chronological schedule from wake time to bedtime, built around the user's available focus hours and existing commitments, with a summary, a focus message, and tactical mitigation tips for the day.
-- **Context-Aware Motivational Coaching** — A dynamic coaching panel that adapts its tone to the user's environment: blunt, high-accountability messaging in Dark/high-pressure mode, and warm, encouraging messaging in Light mode — driven by the user's current risk profile and productivity score.
-- **Immersive Focus Room** — A distraction-free workspace with a custom procedural ambient audio engine (built directly with the Web Audio API, not pre-recorded files), a toggleable 12h/24h clock, and true browser fullscreen mode for deep work sessions.
-- **Daily Defensive Shield Habits** — A dedicated tracker for pro-active habits (Work, Study, Personal, Health, Other) designed to systematically build routine consistency.
-- **Secure Cloud Sync & Google Calendar Integration** — Seamlessly connect with Google to secure and back up your tasks and habits securely into Google Firebase Firestore, and sync scheduled commitments directly to Google Calendar as active timeline events.
-- **Resilient AI Layer** — All Gemini calls run through a retry-and-fallback wrapper (primary model with automatic fallback to a lighter model on failure), so the app degrades gracefully instead of breaking under rate limits or transient errors.
+---
 
-## Technologies Used
+## ✨ Features Breakdown
 
-- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons, Motion (animation)
-- **Backend:** Node.js, Express
-- **State & Persistence:** React hooks, Google Firebase Firestore, and browser localStorage
-- **Audio:** Custom procedural audio engine built on the Web Audio API
-- **Build/Tooling:** esbuild, tsx
+### 🤖 Generative AI Copilot (Powered by `@google/genai`)
+- **AI Subtask Generation**: Dynamically breaks down abstract title objectives into 3–7 atomic steps with specific estimated time bounds.
+- **Intelligent Priority Recommendation**: Reviews entire task portfolios to determine realistic threat matrices, highlighting a reserved **Guardian Priority** for critical items.
+- **Dynamic Risk Score Diagnostics**: Factors task constraints, total active checklists, and bedtime limits to calculate a predictive schedule threat score.
+- **Tactical Daily Action Plan**: Assembles a custom hourly timeline from waking hours to sleep time, loaded with structured buffer blocks.
+- **Aesthetic Motivational Coach**: Provides adaptive feedback, rendering blunt, high-pressure directives in Dark Theme and encouraging growth coaching in Light Theme.
 
-## Google Technologies Utilized
+### 🌌 Immersive Focus Dome
+- **Procedural Audio Engine**: Soundscapes generated on the fly using the browser's native **Web Audio API** (e.g., custom white/pink noise, cosmic drones).
+- **Zero-Distraction Screen**: Toggleable fullscreen interfaces featuring a real-time UTC/Local dynamic countdown timer clock (12h/24h toggle support).
 
-- **Gemini API** (`@google/genai`) — powers all five AI endpoints: subtask generation, deadline risk scoring, task prioritization, daily action plan generation, and motivational coaching. Uses Gemini's structured output (`responseSchema`) feature to return strict, type-safe JSON consumed directly by the frontend.
-- **Gemini Models:** `gemini-3.5-flash` as the primary reasoning model, with automatic fallback to `gemini-3.1-flash-lite` for resilience under load.
-- **Google Firebase (Auth & Firestore)** — Powers Google OAuth secure authentication and real-time user backups/restorations of commitments, checklists, and habits.
-- **Google Calendar API** — Integrates with the user's calendar to register commitments directly as actionable time blocks.
-- **Google AI Studio** — used for development, secrets management (API keys), and deployment.
-- **Google Cloud Run** — hosting target for the deployed application via AI Studio's deploy pipeline.
+### ☁️ Secure Cloud Sync & Google Calendar Integration
+- **Google Cloud Backups**: Secure user data (tasks, habits, subtasks, daily plan logs) into Google Firebase Firestore via Firebase Auth.
+- **Google Calendar Sync**: Actively register commitments directly into the user's real Google Calendar timeline.
+
+### 🛡️ Resilient Failover Protocol
+- **Dual-Model Fallback Architecture**: Primary orchestration handled by `gemini-3.5-flash` with graceful degradation to `gemini-3.1-flash-lite` in the event of transient outages or rate limits.
+
+---
+
+## 🏗️ System Architecture
+
+```
+                    ┌────────────────────────┐
+                    │      Client Browser    │
+                    └───────────┬────────────┘
+                                │ (HTTP / API Requests)
+                                ▼
+                    ┌────────────────────────┐
+                    │      Vite Dev/Prod     │
+                    │   Reverse Proxy / CDN  │
+                    └───────────┬────────────┘
+                                │
+         ┌──────────────────────┴──────────────────────┐
+         ▼                                             ▼
+┌─────────────────┐                             ┌─────────────────┐
+│  Express Server │                             │ Google Firebase │
+│ (Port 3000 Node)│                             │ (Auth/Firestore)│
+└────────┬────────┘                             └─────────────────┘
+         │
+         ├──────────────────────────────┐
+         ▼                              ▼
+┌─────────────────┐            ┌──────────────────┐
+│   Gemini API    │            │ Google Calendar  │
+│ (v3.5-flash /   │            │   REST Services  │
+│  v3.1-lite)     │            │                  │
+└─────────────────┘            └──────────────────┘
+```
+
+### 📂 Directory Structure Layout
+
+```
+├── .env.example                 # Template for required development secrets
+├── README.md                    # Professional documentation
+├── package.json                 # Node package configuration, script targets, and build configs
+├── server.ts                    # Full-stack backend Express configuration & Vite asset middleware
+├── firestore.rules              # Secure database read/write schema declarations
+├── assets/
+│   └── hero_banner.jpg          # Styled high-fidelity hero showcase banner
+└── src/
+    ├── main.tsx                 # Front-end initialization entrypoint
+    ├── App.tsx                  # Main React view controller and master application loop
+    ├── types.ts                 # Shared global strictly-typed definitions
+    ├── lib/
+    │   ├── firebase.ts          # Google Firebase initialization and cloud sync/Calendar API layer
+    │   └── audioEngine.ts       # Procedural audio synthesizers built on Web Audio API
+    └── components/
+        ├── AiMotivationPanel.tsx # Adaptable Gemini motivational coach view
+        ├── DailyPlanWidget.tsx  # Dynamic hourly timeline generation panel
+        ├── FocusRoom.tsx        # High-immersion deep work fullscreen visualizer
+        ├── HabitTracker.tsx     # Custom proactive time-shield checklist widget
+        ├── RiskAnalysisWidget.tsx # Full portfolio-level predictive collision widget
+        ├── TaskForm.tsx         # User commitment creation & configuration interface
+        └── TaskSubtaskManager.tsx # Structured task editor and subtask control dashboard
+```
+
+---
+
+## 🛠️ Installation & Setup
+
+### 📋 Prerequisites
+- **Node.js** (v18 or higher recommended)
+- **NPM** (v9 or higher recommended)
+- **Google Cloud Project** with:
+  - Google Gemini API key configured
+  - Google Calendar OAuth and Firebase Auth enabled
+
+### 🚀 Local Quickstart Instructions
+
+1. **Clone the repository and navigate to the project root:**
+   ```bash
+   cd deadline-guardian-ai
+   ```
+
+2. **Install project dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment Variables:**
+   Duplicate the `.env.example` file and rename it to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+   Add your active API Credentials:
+   ```env
+   GEMINI_API_KEY=your_gemini_api_key_here
+   ```
+
+4. **Launch the development server:**
+   ```bash
+   npm run dev
+   ```
+   *Your full-stack application will boot immediately on [http://localhost:3000](http://localhost:3000) using Express with Vite Hot-Reload.*
+
+5. **Generate Production Build Bundle:**
+   To bundle static frontend assets and compile the TypeScript backend Express server into a standalone node-executable CommonJS package inside `dist/`:
+   ```bash
+   npm run build
+   ```
+
+6. **Start Compiled Production Server:**
+   ```bash
+   npm run start
+   ```
+
+---
+
+## 🧰 Technologies Used
+
+- **UI Framework**: [React 19](https://react.dev/) & [TypeScript](https://www.typescriptlang.org/)
+- **Build System**: [Vite 6](https://vite.dev/) & [esbuild](https://esbuild.github.io/)
+- **Server Framework**: [Express 4](https://expressjs.com/) with native TypeScript runner (`tsx`)
+- **Styling Utility**: [Tailwind CSS 4](https://tailwindcss.com/)
+- **Orchestration / Motion**: [Motion (formerly Framer Motion)](https://motion.dev/)
+- **Aesthetic Iconography**: [Lucide React Icons](https://lucide.dev/)
+- **Database / Sync**: [Google Firebase (Authentication & Firestore)](https://firebase.google.com/)
+- **Integration API**: [Google Calendar API](https://developers.google.com/calendar)
+- **Acoustic Synthesis**: Procedural synthesis built purely with [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
+
+---
+
+## 📽️ Interactive Walkthrough
+
+Here is a typical workflow demonstrating how Deadline Guardian AI coordinates your day:
+
+1. **Portfolio Entry**: Add a complex task (e.g., `"Complete CS Thesis Draft"`). Set estimated completion hours, categories, and bedtime target.
+2. **AI-Slicing**: Trigger **AI Checklist Breakdown**. Gemini generates a series of micro-tasks (e.g., literature review, formatting outline) complete with individual duration bounds.
+3. **Portfolio Risk Audit**: Access the Risk diagnostics tab. Gemini evaluates this milestone against all other active tasks and highlights potential collisions.
+4. **Daily Plan Generation**: Input your wake hours and available free hours. Click **Generate Action Plan**. Gemini constructs an hour-by-hour dynamic schedule mapping buffer blocks automatically.
+5. **Deep Work Dome**: Select a priority item, select `"Focus Dome"`, enable the custom cosmic procedurally synthesized white noise, toggle fullscreen, and launch your focus sprint.
+6. **Cloud Sync & Calendar Sync**: Log in with Google, backup your tasks securely into the Firestore backend, and push the commitments directly to your real Google Calendar for offline tracking.
+
+---
+
+*Formulating highly structured, bulletproof safety margins. Designed to defend your target milestones.*
