@@ -203,7 +203,7 @@ const TUTORIAL_STEPS = [
   },
   {
     title: "5. Deep Work Immersive Dome",
-    tab: "dashboard" as const,
+    tab: "focus" as const,
     description: "Ready for deep isolation? Open the Focus Dome from the sidebar launcher at the bottom-left to engage custom-synthesized ambient sounds and real-time countdown tracking.",
     note: "💡 Uses native browser Web Audio synthesis to generate eye-safe focus soundscapes."
   }
@@ -440,7 +440,7 @@ export default function App() {
         "tasks",
         "daily",
         "habits",
-        "dashboard"
+        "focus"
       ];
       setActiveTab(stepTabs[tutorialStep]);
       
