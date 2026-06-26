@@ -1,16 +1,18 @@
 import React, { useState } from "react";
-import { Check, Plus, Trash2, Sparkles, Loader2, ListTodo } from "lucide-react";
+import { Check, Plus, Trash2, Sparkles, Loader2, ListTodo, Globe, Search, ExternalLink } from "lucide-react";
 import { Task, SubTask } from "../types";
 
 interface TaskSubtaskManagerProps {
   task: Task;
   onUpdateSubtasks: (taskId: string, subtasks: SubTask[]) => void;
+  onUpdateCitations?: (taskId: string, citations: string[], searchQueries: string[]) => void;
 }
 
-export default function TaskSubtaskManager({ task, onUpdateSubtasks }: TaskSubtaskManagerProps) {
+export default function TaskSubtaskManager({ task, onUpdateSubtasks, onUpdateCitations }: TaskSubtaskManagerProps) {
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorStatus, setErrorStatus] = useState<string | null>(null);
+  const [useSearch, setUseSearch] = useState(false);
 
   const toggleSubtask = (subtaskId: string) => {
     const updated = task.subtasks.map((st) =>
@@ -51,6 +53,7 @@ export default function TaskSubtaskManager({ task, onUpdateSubtasks }: TaskSubta
           description: task.description,
           category: task.category,
           estimatedHours: task.estimatedHours,
+          useSearch: useSearch,
         }),
       });
 
@@ -68,10 +71,11 @@ export default function TaskSubtaskManager({ task, onUpdateSubtasks }: TaskSubta
           estimatedMinutes: Number(st.estimatedMinutes) || 30,
         }));
 
-        // Merge or replace? Let's append to existing, or replace if current is empty.
-        // Replacing is much cleaner if user clicked "AI Breakdown" on an empty list, 
-        // but merging allows continuous additions. Let's merge them!
         onUpdateSubtasks(task.id, [...task.subtasks, ...parsed]);
+
+        if (onUpdateCitations && (data.citations || data.searchQueries)) {
+          onUpdateCitations(task.id, data.citations || [], data.searchQueries || []);
+        }
       } else {
         throw new Error("Invalid subtask list format returned from Gemini.");
       }
@@ -105,24 +109,37 @@ export default function TaskSubtaskManager({ task, onUpdateSubtasks }: TaskSubta
           </span>
         </div>
 
-        <button
-          type="button"
-          disabled={loading}
-          onClick={handleAiBreakdown}
-          className="text-xs bg-teal-950/45 text-teal-300 hover:bg-teal-900/60 disabled:bg-stone-900 disabled:text-stone-600 border border-teal-800/60 hover:border-teal-600 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition font-medium self-end sm:self-auto"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Slicing Task...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-3.5 h-3.5 animate-pulse text-amber-400" />
-              AI Generate Subtasks
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Toggle for Search Grounding */}
+          <label className="flex items-center gap-1.5 cursor-pointer text-[10px] text-slate-400 font-mono bg-stone-900/60 px-2 py-1 rounded-md border border-stone-850 hover:bg-stone-900 transition">
+            <input
+              type="checkbox"
+              checked={useSearch}
+              onChange={(e) => setUseSearch(e.target.checked)}
+              className="accent-teal-500 scale-90"
+            />
+            <span>Google Grounding</span>
+          </label>
+
+          <button
+            type="button"
+            disabled={loading}
+            onClick={handleAiBreakdown}
+            className="text-xs bg-teal-950/45 text-teal-300 hover:bg-teal-900/60 disabled:bg-stone-900 disabled:text-stone-600 border border-teal-800/60 hover:border-teal-600 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition font-medium self-end sm:self-auto cursor-pointer"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Slicing Task...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5 animate-pulse text-amber-400" />
+                AI Generate Subtasks
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Progress slider bar */}
@@ -162,13 +179,13 @@ export default function TaskSubtaskManager({ task, onUpdateSubtasks }: TaskSubta
           {task.subtasks.map((st) => (
             <div
               key={st.id}
-              className="group flex items-center justify-between p-2.5 rounded-lg bg-stone-900/40 hover:bg-stone-900/70 border border-stone-900 transition"
+              className="group flex items-start justify-between p-2.5 rounded-lg bg-stone-900/40 hover:bg-stone-900/70 border border-stone-900 transition gap-2"
             >
-              <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
                 <button
                   type="button"
                   onClick={() => toggleSubtask(st.id)}
-                  className={`w-4 h-4 rounded border flex items-center justify-center transition cursor-pointer shrink-0 ${
+                  className={`w-4 h-4 rounded border flex items-center justify-center transition cursor-pointer shrink-0 mt-0.5 ${
                     st.isCompleted
                       ? "bg-teal-600/80 border-teal-500 text-stone-150"
                       : "border-stone-700 hover:border-stone-500"
@@ -178,13 +195,13 @@ export default function TaskSubtaskManager({ task, onUpdateSubtasks }: TaskSubta
                 </button>
                 <div className="flex flex-col min-w-0">
                   <span
-                    className={`text-xs text-stone-200 transition select-none truncate ${
+                    className={`text-xs text-stone-200 transition select-none break-words whitespace-normal ${
                       st.isCompleted ? "line-through text-stone-500" : ""
                     }`}
                   >
                     {st.title}
                   </span>
-                  <span className="text-[10px] text-stone-500 font-mono">
+                  <span className="text-[10px] text-stone-500 font-mono mt-0.5">
                     {st.estimatedMinutes} mins
                   </span>
                 </div>
@@ -193,12 +210,49 @@ export default function TaskSubtaskManager({ task, onUpdateSubtasks }: TaskSubta
               <button
                 type="button"
                 onClick={() => deleteSubtask(st.id)}
-                className="opacity-0 group-hover:opacity-100 text-stone-500 hover:text-rose-400 p-1 rounded transition shrink-0"
+                className="opacity-0 group-hover:opacity-100 text-stone-500 hover:text-rose-400 p-1 rounded transition shrink-0 mt-0.5 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Display Google Search citations/queries if they exist */}
+      {task.citations && task.citations.length > 0 && (
+        <div className="mt-3.5 mb-4 p-3 bg-stone-900/40 border border-stone-850 rounded-lg space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
+            <Globe className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Google Search Grounding Verifications</span>
+          </div>
+          
+          {task.searchQueries && task.searchQueries.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {task.searchQueries.map((query, index) => (
+                <span key={index} className="text-[9px] bg-indigo-950/50 border border-indigo-900/40 text-indigo-300 font-mono px-2 py-0.5 rounded flex items-center gap-1">
+                  <Search className="w-2.5 h-2.5 shrink-0" />
+                  {query}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="space-y-1.5 pt-1 border-t border-stone-850/60">
+            <span className="text-[9px] text-stone-500 font-mono block uppercase">Verified Web Citations</span>
+            {task.citations.map((url, index) => (
+              <a
+                key={index}
+                href={url.startsWith("http") ? url : `https://google.com/search?q=${encodeURIComponent(url)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 leading-normal truncate hover:underline"
+              >
+                <ExternalLink className="w-3 h-3 shrink-0" />
+                <span>{url}</span>
+              </a>
+            ))}
+          </div>
         </div>
       )}
 
@@ -213,7 +267,7 @@ export default function TaskSubtaskManager({ task, onUpdateSubtasks }: TaskSubta
         />
         <button
           type="submit"
-          className="bg-stone-900 border border-stone-800 hover:border-stone-700 hover:text-white text-stone-400 p-1.5 px-3 rounded-lg flex items-center gap-1 transition text-xs font-semibold"
+          className="bg-stone-900 border border-stone-800 hover:border-stone-700 hover:text-white text-stone-400 p-1.5 px-3 rounded-lg flex items-center gap-1 transition text-xs font-semibold cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
           Add

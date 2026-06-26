@@ -79,17 +79,16 @@ app.get("/api/config-status", (req, res) => {
   res.json({ isConfigured });
 });
 
-// Endpoint 1: Generate subtasks for a task
-app.post("/api/generate-subtasks", async (req, res) => {
-  try {
-    const { title, description, category, estimatedHours } = req.body;
-    if (!title) {
-       res.status(400).json({ error: "Task title is required." });
-       return;
-    }
-
-    const ai = getGeminiClient();
-    const prompt = `Goal: Generate high-quality subtasks for the following task:
+// Reusable internal helper for subtask generation
+async function generateSubtasksInternal(
+  title: string,
+  description?: string,
+  category?: string,
+  estimatedHours?: number,
+  useSearch?: boolean
+) {
+  const ai = getGeminiClient();
+  let prompt = `Goal: Generate high-quality subtasks for the following task:
 Task Title: "${title}"
 Description: ${description || "No description provided."}
 Category: ${category || "General"}
@@ -97,32 +96,78 @@ Target Hours: ${estimatedHours || 2}
 
 Please break this task down into logical, atomic, step-by-step subtasks. Each subtask must have a clear actionable title and an estimated completion time in minutes. Keep the number of subtasks between 3 and 7. The sum of estimated minutes should roughly correspond to the goal hours (e.g., if goal hours is 3, total minutes should be around 180).`;
 
-    const response = await callGeminiWithFallback(ai, {
-      model: "gemini-3.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          description: "List of actionable subtasks",
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING, description: "Actionable name / title for the subtask" },
-              estimatedMinutes: { type: Type.INTEGER, description: "Estimated completion time in minutes" }
-            },
-            required: ["title", "estimatedMinutes"]
-          }
-        }
-      }
-    });
+  if (useSearch) {
+    prompt += `\n\nSince search grounding is enabled, use live Google Search information to make these subtasks highly specific and accurate to any technical terms, current APIs, subject matters, or tools mentioned. Provide realistic steps based on standard practices.`;
+  }
 
-    const text = response.text;
-    if (!text) {
-      throw new Error("Empty response received from Gemini.");
+  const config: any = {
+    responseMimeType: "application/json",
+    responseSchema: {
+      type: Type.ARRAY,
+      description: "List of actionable subtasks",
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          title: { type: Type.STRING, description: "Actionable name / title for the subtask" },
+          estimatedMinutes: { type: Type.INTEGER, description: "Estimated completion time in minutes" }
+        },
+        required: ["title", "estimatedMinutes"]
+      }
     }
-    const subtasks = JSON.parse(text);
-    res.json({ subtasks });
+  };
+
+  if (useSearch) {
+    config.tools = [{ googleSearch: {} }];
+  }
+
+  const response = await callGeminiWithFallback(ai, {
+    model: "gemini-3.5-flash",
+    contents: prompt,
+    config: config
+  });
+
+  const text = response.text;
+  if (!text) {
+    throw new Error("Empty response received from Gemini.");
+  }
+
+  // Safely extract grounding search queries or web sources if present
+  let citations: string[] = [];
+  let searchQueries: string[] = [];
+  try {
+    const candidate = response.candidates?.[0];
+    if (candidate?.groundingMetadata) {
+      const metadata = candidate.groundingMetadata;
+      if (metadata.webSearchQueries) {
+        searchQueries = metadata.webSearchQueries;
+      }
+      if (metadata.groundingChunks) {
+        citations = metadata.groundingChunks
+          .map((chunk: any) => chunk.web?.uri || chunk.web?.title)
+          .filter(Boolean);
+      }
+    }
+  } catch (e) {
+    console.error("Failed to parse grounding metadata", e);
+  }
+
+  return {
+    subtasks: JSON.parse(text),
+    citations: Array.from(new Set(citations)).slice(0, 3),
+    searchQueries: Array.from(new Set(searchQueries)).slice(0, 3)
+  };
+}
+
+// Endpoint 1: Generate subtasks for a task
+app.post("/api/generate-subtasks", async (req, res) => {
+  try {
+    const { title, description, category, estimatedHours, useSearch } = req.body;
+    if (!title) {
+       res.status(400).json({ error: "Task title is required." });
+       return;
+    }
+    const result = await generateSubtasksInternal(title, description, category, estimatedHours, !!useSearch);
+    res.json(result);
   } catch (error: any) {
     console.error("Error in /api/generate-subtasks:", error);
     res.status(500).json({
@@ -419,6 +464,73 @@ Provide:
     console.error("Error in /api/generate-motivation:", error);
     res.status(500).json({
       error: error.message || "Failed to generate AI motivation due to a server error."
+    });
+  }
+});
+
+// Endpoint 6: Autonomous Timeline Healing Agent Loop
+app.post("/api/heal-timeline", async (req, res) => {
+  try {
+    const { tasks, currentLocalTime } = req.body;
+    if (!tasks || !Array.isArray(tasks)) {
+      res.status(400).json({ error: "An array of active 'tasks' is required." });
+      return;
+    }
+
+    const ai = getGeminiClient();
+    const prompt = `Goal: You are the autonomous "Timeline Sentinel Guardian Agent". Your objective is to heal the user's workload timeline from critical deadline collisions and stress peaks.
+Current local time: "${currentLocalTime || new Date().toISOString()}"
+
+Active commitments portfolio:
+${JSON.stringify(tasks, null, 2)}
+
+As an autonomous healing agent:
+1. Identify deadline collisions and overlapping effort peaks.
+2. Formulate active healing recommendations (priority adjustments, custom tactical advice, or subtask shifts).
+3. Return an array of "healedTasks" where you can adjust task priority, and append a specific "healingAdvice" field to the task objects to resolve workload friction.
+4. Also compile a brief "healingReport" summarizing your autonomous actions.
+
+Respond in JSON with:
+1. 'healedTasks': Array of updated task objects containing 'id' and 'priority' (updated to optimized level: 'low', 'medium', 'high', 'critical', or 'guardian-priority') and a brand new 'healingAdvice' string parameter.
+2. 'healingReport': A detailed, inspiring, and professional summary of the autonomous timeline adjustments you made to secure the user's deadlines (2-3 sentences).`;
+
+    const response = await callGeminiWithFallback(ai, {
+      model: "gemini-3.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            healingReport: { type: Type.STRING, description: "A report of how the agent healed the timeline." },
+            healedTasks: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  id: { type: Type.STRING },
+                  priority: { type: Type.STRING },
+                  healingAdvice: { type: Type.STRING, description: "Actionable direct advice for this specific task to mitigate its timeline risk" }
+                },
+                required: ["id", "priority", "healingAdvice"]
+              }
+            }
+          },
+          required: ["healingReport", "healedTasks"]
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) {
+      throw new Error("Empty response received from Gemini.");
+    }
+    const result = JSON.parse(text);
+    res.json(result);
+  } catch (error: any) {
+    console.error("Error in /api/heal-timeline:", error);
+    res.status(500).json({
+      error: error.message || "Failed to execute Timeline Healing Agent."
     });
   }
 });

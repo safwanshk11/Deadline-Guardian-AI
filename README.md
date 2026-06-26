@@ -2,7 +2,7 @@
 
 > **High-Performance Workspace Defensive Copilot** — Defending your target milestones against compressed timelines using multi-layered Gemini analysis, procedural focus-shield soundscapes, and native Google Cloud & Calendar synchronization.
 
-
+![Deadline Guardian AI Hero Banner](./assets/hero_banner.jpg)
 
 ---
 

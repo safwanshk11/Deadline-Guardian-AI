@@ -677,6 +677,49 @@ export default function App() {
     }
   };
 
+  const handleUpdateCitations = (taskId: string, citations: string[], searchQueries: string[]) => {
+    const updated = tasks.map((t) => {
+      if (t.id === taskId) {
+        return {
+          ...t,
+          citations,
+          searchQueries,
+        };
+      }
+      return t;
+    });
+    setTasks(updated);
+
+    const curSelected = updated.find(t => t.id === taskId);
+    if (curSelected) {
+      setSelectedTask(curSelected);
+    }
+  };
+
+  const handleApplyHealedTasks = (healedTasks: Array<{ id: string; priority: any; healingAdvice: string }>, report: string) => {
+    const updated = tasks.map((t) => {
+      const proposal = healedTasks.find((ht) => ht.id === t.id);
+      if (proposal) {
+        return {
+          ...t,
+          priority: proposal.priority,
+          healingAdvice: proposal.healingAdvice,
+        };
+      }
+      return t;
+    });
+    setTasks(updated);
+
+    if (selectedTask) {
+      const curSelected = updated.find(t => t.id === selectedTask.id);
+      if (curSelected) {
+        setSelectedTask(curSelected);
+      }
+    }
+
+    setSyncStatusMessage("Sentinel Healing Applied: Workload priorities and healing buffers established successfully.");
+  };
+
   const handleToggleTaskStatus = (taskId: string) => {
     let becameCompleted = false;
     const updated = tasks.map((t) => {
@@ -1120,6 +1163,14 @@ export default function App() {
           motivation={null}
           isDarkMode={isDarkMode}
           onExit={() => setActiveTab("dashboard")}
+          onExitWithDuration={(seconds) => {
+            const currentSec = localStorage.getItem("deadline_guardian_focus_seconds_v1");
+            const currentSess = localStorage.getItem("deadline_guardian_focus_sessions_v1");
+            const nextSec = (currentSec ? Number(currentSec) : 0) + seconds;
+            const nextSess = (currentSess ? Number(currentSess) : 0) + 1;
+            localStorage.setItem("deadline_guardian_focus_seconds_v1", String(nextSec));
+            localStorage.setItem("deadline_guardian_focus_sessions_v1", String(nextSess));
+          }}
         />
       ) : (
         <>
@@ -1804,6 +1855,7 @@ export default function App() {
                       <TaskSubtaskManager 
                         task={selectedTask}
                         onUpdateSubtasks={handleUpdateSubtasks}
+                        onUpdateCitations={handleUpdateCitations}
                       />
 
                       {/* AI RISK DIAGNOSTIC */}

@@ -21,11 +21,13 @@ interface FocusRoomProps {
   motivation: MotivationData | null;
   isDarkMode: boolean;
   onExit: () => void;
+  onExitWithDuration?: (seconds: number) => void;
 }
 
 export const FocusRoom: React.FC<FocusRoomProps> = ({
   isDarkMode,
   onExit,
+  onExitWithDuration,
 }) => {
   const [time, setTime] = useState<Date>(new Date());
   const [isMilitaryTime, setIsMilitaryTime] = useState<boolean>(false);
@@ -37,6 +39,15 @@ export const FocusRoom: React.FC<FocusRoomProps> = ({
 
   const audioEngine = useRef<AudioEngine | null>(null);
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const mountTime = useRef<number>(Date.now());
+
+  const handleExitFocus = () => {
+    const elapsedSeconds = Math.round((Date.now() - mountTime.current) / 1000);
+    if (onExitWithDuration) {
+      onExitWithDuration(elapsedSeconds);
+    }
+    onExit();
+  };
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -193,7 +204,7 @@ export const FocusRoom: React.FC<FocusRoomProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onClick={onExit}
+      onClick={handleExitFocus}
       className={`group w-full h-screen flex flex-col justify-center items-center p-4 sm:p-12 cursor-pointer select-none transition-colors duration-700 relative overflow-hidden ${
         isDarkMode
           ? "bg-slate-950 text-slate-100"
