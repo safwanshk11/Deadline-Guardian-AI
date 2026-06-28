@@ -162,7 +162,7 @@ Students, professionals, and entrepreneurs frequently derail on deadlines, assig
 Here is a typical workflow demonstrating how Deadline Guardian AI coordinates your day:
 
 1. **Portfolio Entry**: Add a complex task (e.g., `"Complete CS Thesis Draft"`). Set estimated completion hours, categories, and bedtime target.
-2. **AI-Slicing**: Trigger **AI Checklist Breakdown**. Gemini generates a series of micro-tasks (e.g., literature review, formatting outline) complete with individual duration bounds.
+2. **AI-Slicing**: **Trigger AI Checklist Breakdown:** Gemini generates a series of micro-tasks (e.g., literature review, formatting outline) complete with individual duration constraints.
 3. **Portfolio Risk Audit**: Access the Risk diagnostics tab. Gemini evaluates this milestone against all other active tasks and highlights potential collisions.
 4. **Daily Plan Generation**: Input your wake hours and available free hours. Click **Generate Action Plan**. Gemini constructs an hour-by-hour dynamic schedule mapping buffer blocks automatically.
 5. **Deep Work Dome**: Select a priority item, select `"Focus Dome"`, enable the custom cosmic procedurally synthesized white noise, toggle fullscreen, and launch your focus sprint.
